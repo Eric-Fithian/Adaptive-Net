@@ -106,11 +106,11 @@ class LargeNetwork(nn.Module):
         return x
     
 class AdaptiveNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, layer_1_size= 128, layer_2_size=64, adapt_interval=100, k_split=2.0, k_prune=0.1):
         super(AdaptiveNetwork, self).__init__()
-        self.adaptive1 = AdaptiveLayer(in_features=28 * 28, out_features=128, adapt_interval=100, k_split=2.0, k_prune=0.1, activation=nn.GELU())
-        self.adaptive2 = AdaptiveLayer(in_features=128, out_features=64, adapt_interval=100, k_split=2.0, k_prune=0.1, activation=nn.GELU())
-        self.fc3 = nn.Linear(64, 10)
+        self.adaptive1 = AdaptiveLayer(in_features=28 * 28, out_features=layer_1_size, adapt_interval=adapt_interval, k_split=k_split, k_prune=k_prune, activation=nn.GELU())
+        self.adaptive2 = AdaptiveLayer(in_features=layer_1_size, out_features=layer_2_size, adapt_interval=adapt_interval, k_split=k_split, k_prune=k_prune, activation=nn.GELU())
+        self.fc3 = nn.Linear(layer_2_size, 10)
 
         # Set the next layer for adaptive layers
         self.adaptive1.set_next_layer(self.adaptive2)
@@ -266,12 +266,159 @@ def train_and_evaluate_baselines(model, train_loader, val_loader, test_loader, e
     
     return train_losses, val_losses, train_accuracies, val_accuracies
 
-def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, filename='metrics_plot.png'):
-    # Create a figure with two subplots
-    plt.figure(figsize=(12, 10))
+def train_and_evaluate_adaptive(model, train_loader, val_loader, test_loader, epochs, exp_name='Unknown'):
+    model.to(DEVICE)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
+    train_losses = []
+    val_losses = []
+    train_accuracies = []
+    val_accuracies = []
+    layer_1_sizes = []
+    layer_2_sizes = []
+    best_val_loss = float('inf')
+    best_model_state = None
+    best_model_structure = None  # Store the best model's layer sizes
+    
+    for epoch in range(epochs):
+        # Training phase
+        model.train()
+        train_loss = 0.0
+        train_correct = 0
+        train_total = 0
+        
+        for images, labels in train_loader:
+            images, labels = images.view(images.size(0), -1).to(DEVICE), labels.to(DEVICE)
+            optimizer.zero_grad()
+            outputs = model.forward(images)
+            
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            old_structure = (model.adaptive1.out_features, model.adaptive2.out_features)
+            
+            model.backward_step()
+            
+            new_structure = (model.adaptive1.out_features, model.adaptive2.out_features)
+            
+            if old_structure != new_structure:
+                # Structure changed, recreate optimizer with fresh state
+                optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+                print(f"Network structure changed: {old_structure} → {new_structure}. Optimizer reset.")
+            
+            train_loss += loss.item()
+            
+            # Calculate accuracy
+            _, predicted = torch.max(outputs.data, 1)
+            train_total += labels.size(0)
+            train_correct += (predicted == labels).sum().item()
+        
+        avg_train_loss = train_loss / len(train_loader)
+        train_accuracy = 100 * train_correct / train_total
+        
+        train_losses.append(avg_train_loss)
+        train_accuracies.append(train_accuracy)
+        
+        # Store layer sizes
+        current_layer_1_size = model.adaptive1.out_features
+        current_layer_2_size = model.adaptive2.out_features
+        layer_1_sizes.append(current_layer_1_size)
+        layer_2_sizes.append(current_layer_2_size)
+        
+        # Validation phase
+        model.eval()
+        val_loss = 0.0
+        val_correct = 0
+        val_total = 0
+        
+        with torch.no_grad():
+            for images, labels in val_loader:
+                images, labels = images.view(images.size(0), -1).to(DEVICE), labels.to(DEVICE)
+                outputs = model(images)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+                
+                # Calculate accuracy
+                _, predicted = torch.max(outputs.data, 1)
+                val_total += labels.size(0)
+                val_correct += (predicted == labels).sum().item()
+        
+        avg_val_loss = val_loss / len(val_loader)
+        val_accuracy = 100 * val_correct / val_total
+        
+        val_losses.append(avg_val_loss)
+        val_accuracies.append(val_accuracy)
+        
+        # Save the best model based on validation loss
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_model_state = model.state_dict().copy()
+            best_model_structure = (current_layer_1_size, current_layer_2_size)  # Save structure
+        
+        if (epoch + 1) % 10 == 0 or epoch == 0:
+            print(f"Epoch [{epoch+1}/{epochs}], Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.2f}%, Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.2f}%")
+    
+    # Print the best model's structure
+    print(f"\nBest model structure: Layer 1 size = {best_model_structure[0]}, Layer 2 size = {best_model_structure[1]}")
+    
+    # Check if model structure needs to be adjusted to match the best model
+    current_structure = (model.adaptive1.out_features, model.adaptive2.out_features)
+    if current_structure != best_model_structure:
+        print(f"Restoring best model structure: {current_structure} → {best_model_structure}")
+        # Create a new model with the best structure using the new initialization API
+        best_model = AdaptiveNetwork(
+            layer_1_size=best_model_structure[0],
+            layer_2_size=best_model_structure[1],
+            adapt_interval=model.adaptive1.adapt_interval,
+            k_split=model.adaptive1.k_split,
+            k_prune=model.adaptive1.k_prune
+        )
+        
+        # Now load the state dict into the correctly sized model
+        best_model.to(DEVICE)
+        best_model.load_state_dict(best_model_state)
+        model = best_model  # Replace the original model with the best one
+    else:
+        # Load the best model's state
+        model.load_state_dict(best_model_state)
+    
+    # Evaluate the best model on test set
+    model.eval()
+    test_loss = 0.0
+    test_correct = 0
+    test_total = 0
+    
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images, labels = images.view(images.size(0), -1).to(DEVICE), labels.to(DEVICE)
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            test_loss += loss.item()
+            
+            _, predicted = torch.max(outputs.data, 1)
+            test_total += labels.size(0)
+            test_correct += (predicted == labels).sum().item()
+    
+    test_accuracy = 100 * test_correct / test_total
+    avg_test_loss = test_loss / len(test_loader)
+    
+    print(f"\nBest model (selected by validation loss):")
+    print(f"Test Loss: {avg_test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
+
+    # plot metrics with layer sizes
+    plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, 
+                layer_1_sizes, layer_2_sizes, filename=f'{exp_name}_metrics.png')
+    
+    return train_losses, val_losses, train_accuracies, val_accuracies
+
+def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, layer_1_sizes=None, layer_2_sizes=None, filename='metrics_plot.png'):
+    # Create a figure with three subplots (now includes layer sizes)
+    plt.figure(figsize=(12, 15))
     
     # Plot losses
-    plt.subplot(2, 1, 1)
+    plt.subplot(3, 1, 1)
     plt.plot(train_losses, label='Training Loss')
     plt.plot(val_losses, label='Validation Loss')
     plt.xlabel('Epochs')
@@ -281,7 +428,7 @@ def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, fil
     plt.grid(True)
     
     # Plot accuracies
-    plt.subplot(2, 1, 2)
+    plt.subplot(3, 1, 2)
     plt.plot(train_accuracies, label='Training Accuracy')
     plt.plot(val_accuracies, label='Validation Accuracy')
     plt.xlabel('Epochs')
@@ -290,13 +437,24 @@ def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, fil
     plt.legend()
     plt.grid(True)
     
+    # Plot layer sizes - new subplot
+    if layer_1_sizes is not None and layer_2_sizes is not None:
+        plt.subplot(3, 1, 3)
+        plt.plot(layer_1_sizes, label='Layer 1 Size')
+        plt.plot(layer_2_sizes, label='Layer 2 Size')
+        plt.xlabel('Epochs')
+        plt.ylabel('Number of Neurons')
+        plt.title('Network Layer Sizes Over Time')
+        plt.legend()
+        plt.grid(True)
+    
     plt.tight_layout()
     plt.savefig(f'experiment_1_figs/{filename}')
     plt.show()
 
 # Train and evaluate baseline models
-very_tiny_model = VeryTinyNetwork()
-very_tiny_train_losses, very_tiny_val_losses, very_tiny_train_acc, very_tiny_val_acc  = train_and_evaluate_baselines(very_tiny_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'very_tiny_model')
+# very_tiny_model = VeryTinyNetwork()
+# very_tiny_train_losses, very_tiny_val_losses, very_tiny_train_acc, very_tiny_val_acc  = train_and_evaluate_baselines(very_tiny_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'very_tiny_model')
 
 '''
 Epoch [1/200], Train Loss: 1.3985, Train Acc: 56.03%, Val Loss: 0.9333, Val Acc: 72.96%
@@ -442,3 +600,136 @@ Epoch [200/200], Train Loss: 0.0146, Train Acc: 99.58%, Val Loss: 1.3427, Val Ac
 Best model (selected by validation loss):
 Test Loss: 1.4679, Test Accuracy: 88.63%
 '''
+
+# Train and evaluate pruning adaptive model
+# adaptive_model = AdaptiveNetwork(layer_1_size=1000, layer_2_size=500, adapt_interval=500, k_split=5, k_prune=0.9)
+# adaptive_train_losses, adaptive_val_losses, adaptive_train_acc, adaptive_val_acc  = train_and_evaluate_adaptive(adaptive_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'adaptive_model_prune')
+
+'''
+Network structure changed: (1000, 500) → (804, 404). Optimizer reset.
+Epoch [1/200], Train Loss: 0.4699, Train Acc: 82.93%, Val Loss: 0.3913, Val Acc: 85.57%
+Network structure changed: (804, 404) → (591, 329). Optimizer reset.
+Network structure changed: (591, 329) → (454, 283). Optimizer reset.
+Network structure changed: (454, 283) → (364, 245). Optimizer reset.
+Network structure changed: (364, 245) → (299, 226). Optimizer reset.
+Network structure changed: (299, 226) → (252, 215). Optimizer reset.
+Network structure changed: (252, 215) → (218, 198). Optimizer reset.
+Network structure changed: (218, 198) → (186, 185). Optimizer reset.
+Network structure changed: (186, 185) → (170, 178). Optimizer reset.
+Network structure changed: (170, 178) → (150, 164). Optimizer reset.
+Network structure changed: (150, 164) → (140, 151). Optimizer reset.
+Network structure changed: (140, 151) → (130, 144). Optimizer reset.
+Network structure changed: (130, 144) → (122, 137). Optimizer reset.
+Network structure changed: (122, 137) → (117, 128). Optimizer reset.
+Network structure changed: (117, 128) → (114, 119). Optimizer reset.
+Epoch [10/200], Train Loss: 0.2150, Train Acc: 92.03%, Val Loss: 0.3000, Val Acc: 89.15%
+Network structure changed: (114, 119) → (110, 113). Optimizer reset.
+Network structure changed: (110, 113) → (107, 110). Optimizer reset.
+Network structure changed: (107, 110) → (99, 100). Optimizer reset.
+Network structure changed: (99, 100) → (93, 96). Optimizer reset.
+Network structure changed: (93, 96) → (89, 90). Optimizer reset.
+Network structure changed: (89, 90) → (89, 86). Optimizer reset.
+Network structure changed: (89, 86) → (80, 86). Optimizer reset.
+Network structure changed: (80, 86) → (77, 86). Optimizer reset.
+Network structure changed: (77, 86) → (74, 85). Optimizer reset.
+Network structure changed: (74, 85) → (70, 82). Optimizer reset.
+Network structure changed: (70, 82) → (67, 81). Optimizer reset.
+Network structure changed: (67, 81) → (63, 78). Optimizer reset.
+Network structure changed: (63, 78) → (62, 74). Optimizer reset.
+Network structure changed: (62, 74) → (60, 68). Optimizer reset.
+Network structure changed: (60, 68) → (59, 65). Optimizer reset.
+Epoch [20/200], Train Loss: 0.1910, Train Acc: 92.89%, Val Loss: 0.3218, Val Acc: 88.74%
+Network structure changed: (59, 65) → (57, 64). Optimizer reset.
+Network structure changed: (57, 64) → (55, 62). Optimizer reset.
+Network structure changed: (55, 62) → (54, 62). Optimizer reset.
+Network structure changed: (54, 62) → (53, 62). Optimizer reset.
+Network structure changed: (53, 62) → (51, 60). Optimizer reset.
+Network structure changed: (51, 60) → (50, 56). Optimizer reset.
+Network structure changed: (50, 56) → (49, 55). Optimizer reset.
+Network structure changed: (49, 55) → (47, 52). Optimizer reset.
+Network structure changed: (47, 52) → (46, 52). Optimizer reset.
+Network structure changed: (46, 52) → (45, 51). Optimizer reset.
+Network structure changed: (45, 51) → (43, 51). Optimizer reset.
+Network structure changed: (43, 51) → (42, 51). Optimizer reset.
+Network structure changed: (42, 51) → (40, 48). Optimizer reset.
+Network structure changed: (40, 48) → (38, 47). Optimizer reset.
+Network structure changed: (38, 47) → (36, 43). Optimizer reset.
+Epoch [30/200], Train Loss: 0.2239, Train Acc: 91.62%, Val Loss: 0.3401, Val Acc: 87.96%
+Network structure changed: (36, 43) → (35, 41). Optimizer reset.
+Network structure changed: (35, 41) → (34, 40). Optimizer reset.
+Network structure changed: (34, 40) → (34, 39). Optimizer reset.
+Network structure changed: (34, 39) → (33, 37). Optimizer reset.
+Network structure changed: (33, 37) → (32, 35). Optimizer reset.
+Network structure changed: (32, 35) → (31, 35). Optimizer reset.
+Network structure changed: (31, 35) → (30, 33). Optimizer reset.
+Network structure changed: (30, 33) → (30, 30). Optimizer reset.
+Network structure changed: (30, 30) → (30, 28). Optimizer reset.
+Network structure changed: (30, 28) → (30, 27). Optimizer reset.
+Epoch [40/200], Train Loss: 0.2143, Train Acc: 92.28%, Val Loss: 0.3581, Val Acc: 88.13%
+Network structure changed: (30, 27) → (29, 26). Optimizer reset.
+Network structure changed: (29, 26) → (28, 26). Optimizer reset.
+Network structure changed: (28, 26) → (27, 26). Optimizer reset.
+Network structure changed: (27, 26) → (26, 26). Optimizer reset.
+Network structure changed: (26, 26) → (25, 26). Optimizer reset.
+Network structure changed: (25, 26) → (25, 25). Optimizer reset.
+Network structure changed: (25, 25) → (23, 24). Optimizer reset.
+Network structure changed: (23, 24) → (23, 23). Optimizer reset.
+Network structure changed: (23, 23) → (22, 21). Optimizer reset.
+Network structure changed: (22, 21) → (21, 20). Optimizer reset.
+Network structure changed: (21, 20) → (20, 19). Optimizer reset.
+Network structure changed: (20, 19) → (19, 19). Optimizer reset.
+Network structure changed: (19, 19) → (19, 18). Optimizer reset.
+Epoch [50/200], Train Loss: 0.2989, Train Acc: 88.99%, Val Loss: 0.4192, Val Acc: 85.68%
+Network structure changed: (19, 18) → (18, 17). Optimizer reset.
+Network structure changed: (18, 17) → (18, 16). Optimizer reset.
+Network structure changed: (18, 16) → (18, 15). Optimizer reset.
+Network structure changed: (18, 15) → (17, 15). Optimizer reset.
+Network structure changed: (17, 15) → (17, 14). Optimizer reset.
+Network structure changed: (17, 14) → (16, 12). Optimizer reset.
+Network structure changed: (16, 12) → (16, 11). Optimizer reset.
+Network structure changed: (16, 11) → (15, 11). Optimizer reset.
+Epoch [60/200], Train Loss: 0.3440, Train Acc: 87.83%, Val Loss: 0.4094, Val Acc: 85.72%
+Network structure changed: (15, 11) → (15, 10). Optimizer reset.
+Network structure changed: (15, 10) → (14, 10). Optimizer reset.
+Epoch [70/200], Train Loss: 0.3038, Train Acc: 89.03%, Val Loss: 0.3908, Val Acc: 86.18%
+Epoch [80/200], Train Loss: 0.2837, Train Acc: 89.74%, Val Loss: 0.3916, Val Acc: 86.49%
+Epoch [90/200], Train Loss: 0.2700, Train Acc: 90.30%, Val Loss: 0.4001, Val Acc: 86.07%
+Network structure changed: (14, 10) → (14, 9). Optimizer reset.
+Network structure changed: (14, 9) → (13, 9). Optimizer reset.
+Network structure changed: (13, 9) → (12, 9). Optimizer reset.
+Network structure changed: (12, 9) → (12, 8). Optimizer reset.
+Epoch [100/200], Train Loss: 0.3799, Train Acc: 85.79%, Val Loss: 0.4831, Val Acc: 83.36%
+Network structure changed: (12, 8) → (10, 8). Optimizer reset.
+Network structure changed: (10, 8) → (9, 8). Optimizer reset.
+Network structure changed: (9, 8) → (8, 8). Optimizer reset.
+Epoch [110/200], Train Loss: 0.3905, Train Acc: 85.42%, Val Loss: 0.4522, Val Acc: 83.40%
+Network structure changed: (8, 8) → (7, 8). Optimizer reset.
+Network structure changed: (7, 8) → (5, 8). Optimizer reset.
+Network structure changed: (5, 8) → (3, 7). Optimizer reset.
+Network structure changed: (3, 7) → (3, 6). Optimizer reset.
+Network structure changed: (3, 6) → (2, 6). Optimizer reset.
+Network structure changed: (2, 6) → (1, 5). Optimizer reset.
+Network structure changed: (1, 5) → (1, 4). Optimizer reset.
+Epoch [120/200], Train Loss: 2.4773, Train Acc: 23.46%, Val Loss: 2.0296, Val Acc: 22.84%
+Network structure changed: (1, 4) → (1, 3). Optimizer reset.
+Network structure changed: (1, 3) → (1, 2). Optimizer reset.
+Epoch [130/200], Train Loss: 1.4300, Train Acc: 35.72%, Val Loss: 1.4297, Val Acc: 36.26%
+Network structure changed: (1, 2) → (1, 1). Optimizer reset.
+Epoch [140/200], Train Loss: 1.5133, Train Acc: 39.01%, Val Loss: 1.5105, Val Acc: 37.97%
+Epoch [150/200], Train Loss: 1.4455, Train Acc: 36.51%, Val Loss: 1.4489, Val Acc: 36.21%
+Epoch [160/200], Train Loss: 1.3846, Train Acc: 40.84%, Val Loss: 1.3853, Val Acc: 41.35%
+Epoch [170/200], Train Loss: 1.3580, Train Acc: 42.18%, Val Loss: 1.3576, Val Acc: 42.87%
+Epoch [180/200], Train Loss: 1.3409, Train Acc: 43.55%, Val Loss: 1.3414, Val Acc: 44.69%
+Epoch [190/200], Train Loss: 1.3281, Train Acc: 44.55%, Val Loss: 1.3280, Val Acc: 45.72%
+Epoch [200/200], Train Loss: 1.3164, Train Acc: 45.68%, Val Loss: 1.3165, Val Acc: 47.19%
+
+Best model structure: Layer 1 size = 114, Layer 2 size = 119
+Restoring best model structure: (1, 1) → (114, 119)
+
+Best model (selected by validation loss):
+Test Loss: 0.6976, Test Accuracy: 80.62%
+'''
+
+# Train and evaluate splitting adaptive model
+adaptive_model_split = AdaptiveNetwork(layer_1_size=4, layer_2_size=4, adapt_interval=500, k_split=1.01, k_prune=0.0)
+adaptive_train_losses_split, adaptive_val_losses_split, adaptive_train_acc_split, adaptive_val_acc_split  = train_and_evaluate_adaptive(adaptive_model_split, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'adaptive_model_split')

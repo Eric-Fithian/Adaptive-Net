@@ -97,24 +97,35 @@ class AdaptiveLayer(nn.Module):
         avg_grad = grad_mean.mean().item()
         avg_var = var_activation.mean().item()
 
+        # Only process neurons up to the size of our stats buffer
+        max_neurons = min(self.out_features, grad_mean.size(0))
+        
+        neurons_to_split = []
+        neurons_to_prune = []
+        
         i = 0
-        while i < self.out_features:
+        while i < max_neurons:
             g_i = grad_mean[i].item()
             v_i = var_activation[i].item()
             
             # Split
             if g_i > self.k_split * avg_grad and v_i > self.k_split * avg_var:
-                self._split_neuron(i)
-                i += 1  # skip newly inserted neuron
-                continue
+                neurons_to_split.append(i)
             
             # Prune
             if g_i < self.k_prune * avg_grad and v_i < self.k_prune * avg_var:
-                self._prune_neuron(i)
-                # out_features shrinks, so i stays the same
-                continue
+                neurons_to_prune.append(i)
             
             i += 1
+            
+        # Split neurons
+        for idx in neurons_to_split:
+            self._split_neuron(idx)
+        
+        # Prune neurons
+        for idx in reversed(neurons_to_prune):
+            self._prune_neuron(idx)
+        
     
     def _reset_stats(self):
         out_size = self.out_features
@@ -153,6 +164,12 @@ class AdaptiveLayer(nn.Module):
             self.bias = nn.Parameter(new_bias)
             self.out_features += 1
 
+            # Expand statistics buffers to match the new layer size
+            device = self.weight.device
+            self.act_sum = torch.cat([self.act_sum, torch.zeros(1, device=device)], dim=0)
+            self.act_sq_sum = torch.cat([self.act_sq_sum, torch.zeros(1, device=device)], dim=0)
+            self.grad_sum = torch.cat([self.grad_sum, torch.zeros(1, device=device)], dim=0)
+
             if self.next_layer is not None:
                 self._expand_downstream_layer(idx)
 
@@ -168,6 +185,11 @@ class AdaptiveLayer(nn.Module):
             self.weight = nn.Parameter(self.weight.data[mask])
             self.bias = nn.Parameter(self.bias.data[mask])
             self.out_features -= 1
+
+            # Also prune statistics buffers to match the new layer size
+            self.act_sum = self.act_sum[mask]
+            self.act_sq_sum = self.act_sq_sum[mask]
+            self.grad_sum = self.grad_sum[mask]
 
             # Also prune from next layer if it exists
             if self.next_layer is not None:
