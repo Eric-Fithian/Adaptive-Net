@@ -9,7 +9,7 @@ class AdaptiveLayer(nn.Module):
                  adapt_interval: int = 100,
                  k_split: float = 2.0,
                  k_prune: float = 0.1,
-                 activation: bool = True):
+                 activation: nn.Module = nn.GELU()):
         super().__init__()
         
         # Core learnable parameters for this layer
@@ -25,7 +25,7 @@ class AdaptiveLayer(nn.Module):
         self.adapt_interval = adapt_interval
         self.k_split = k_split
         self.k_prune = k_prune
-        self.use_activation = activation
+        self.activation_function = activation
         self.train_steps = 0
         
         # Buffers for activation & gradient stats
@@ -35,18 +35,22 @@ class AdaptiveLayer(nn.Module):
         self.register_buffer("count", torch.zeros(1))
         
         self._hook = None
-        self.next_layer = None  # we'll set this after creating the next nn.Linear
+        self.next_layer = None  # we'll set this after creating the next layer
 
-    def set_next_layer(self, layer: nn.Linear):
+    def set_next_layer(self, layer):
         """
-        Store a reference to the downstream layer (assumed to be nn.Linear).
+        Store a reference to the downstream layer.
+        The layer should have 'weight' and 'in_features' attributes.
         """
-        self.next_layer = layer
+        # Check if layer has the necessary attributes
+        if hasattr(layer, 'weight') and hasattr(layer, 'in_features'):
+            self.next_layer = layer
+        else:
+            raise ValueError("Next layer must have 'weight' and 'in_features' attributes")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = F.linear(x, self.weight, self.bias)
-        if self.use_activation:
-            out = F.relu(out)
+        out = self.activation_function(out)
         
         # Accumulate activation stats
         with torch.no_grad():
@@ -168,16 +172,20 @@ class AdaptiveLayer(nn.Module):
             # Also prune from next layer if it exists
             if self.next_layer is not None:
                 self._prune_downstream_layer(idx)
-
+                
     def _expand_downstream_layer(self, idx: int):
         """
         Insert a new column in next_layer.weight corresponding to the new neuron.
-        We replicate the column at 'idx', halve the original, and add noise to the new column.
+        Handles both nn.Linear and AdaptiveLayer downstream layers.
         """
         layer = self.next_layer
-        if not isinstance(layer, nn.Linear):
+        if layer is None:
             return
-
+            
+        # Check if layer has weight and in_features attributes
+        if not hasattr(layer, 'weight') or not hasattr(layer, 'in_features'):
+            return
+            
         with torch.no_grad():
             w_next = layer.weight.data  # shape: (out_features, in_features)
             col_to_duplicate = w_next[:, idx].clone()
@@ -199,9 +207,14 @@ class AdaptiveLayer(nn.Module):
     def _prune_downstream_layer(self, idx: int):
         """
         Remove the column at 'idx' from next_layer.weight.
+        Handles both nn.Linear and AdaptiveLayer downstream layers.
         """
         layer = self.next_layer
-        if not isinstance(layer, nn.Linear):
+        if layer is None:
+            return
+        
+        # Check if layer has weight and in_features attributes
+        if not hasattr(layer, 'weight') or not hasattr(layer, 'in_features'):
             return
         
         with torch.no_grad():
@@ -211,5 +224,4 @@ class AdaptiveLayer(nn.Module):
             # keep all columns except idx
             updated_weight = w_next[:, mask]
             layer.weight = nn.Parameter(updated_weight)
-            
             layer.in_features -= 1
