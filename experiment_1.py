@@ -146,6 +146,7 @@ else:
 BATCH_SIZE = 64
 EPOCHS = 200
 LEARNING_RATE = 0.0005
+MAX_NETWORK_SIZE = 10000*20
 
 # Load FashionMNIST dataset
 transform = transforms.Compose([
@@ -280,8 +281,11 @@ def train_and_evaluate_adaptive(model, train_loader, val_loader, test_loader, ep
     best_val_loss = float('inf')
     best_model_state = None
     best_model_structure = None  # Store the best model's layer sizes
-    
+    stop = False
+
     for epoch in range(epochs):
+        if stop:
+            break
         # Training phase
         model.train()
         train_loss = 0.0
@@ -307,6 +311,10 @@ def train_and_evaluate_adaptive(model, train_loader, val_loader, test_loader, ep
                 # Structure changed, recreate optimizer with fresh state
                 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
                 print(f"Network structure changed: {old_structure} → {new_structure}. Optimizer reset.")
+                # print((new_structure[0] * new_structure[1]))
+            if (new_structure[0] * new_structure[1]) > MAX_NETWORK_SIZE:
+                print(f"New structure exceeds max size: {new_structure}. Stopping training.")
+                stop = True
             
             train_loss += loss.item()
             
@@ -455,7 +463,6 @@ def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies, lay
 # Train and evaluate baseline models
 # very_tiny_model = VeryTinyNetwork()
 # very_tiny_train_losses, very_tiny_val_losses, very_tiny_train_acc, very_tiny_val_acc  = train_and_evaluate_baselines(very_tiny_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'very_tiny_model')
-
 '''
 Epoch [1/200], Train Loss: 1.3985, Train Acc: 56.03%, Val Loss: 0.9333, Val Acc: 72.96%
 Epoch [10/200], Train Loss: 0.4688, Train Acc: 83.82%, Val Loss: 0.4831, Val Acc: 83.02%
@@ -543,7 +550,6 @@ Test Loss: 1.2814, Test Accuracy: 88.09%
 
 # medium_model = MediumNetwork()
 # medium_train_losses, medium_val_losses, medium_train_acc, medium_val_acc  = train_and_evaluate_baselines(medium_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'medium_model')
-
 '''
 Epoch [1/200], Train Loss: 0.5212, Train Acc: 81.24%, Val Loss: 0.4086, Val Acc: 85.00%
 Epoch [10/200], Train Loss: 0.2110, Train Acc: 92.11%, Val Loss: 0.3011, Val Acc: 89.19%
@@ -573,7 +579,6 @@ Test Loss: 1.3449, Test Accuracy: 88.66%
 
 # large_model = LargeNetwork()
 # large_train_losses, large_val_losses, large_train_acc, large_val_acc  = train_and_evaluate_baselines(large_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'large_model')
-
 '''
 Epoch [1/200], Train Loss: 0.5016, Train Acc: 81.66%, Val Loss: 0.4178, Val Acc: 84.20%
 Epoch [10/200], Train Loss: 0.1843, Train Acc: 92.99%, Val Loss: 0.3326, Val Acc: 88.73%
@@ -604,7 +609,6 @@ Test Loss: 1.4679, Test Accuracy: 88.63%
 # Train and evaluate pruning adaptive model
 # adaptive_model = AdaptiveNetwork(layer_1_size=1000, layer_2_size=500, adapt_interval=500, k_split=5, k_prune=0.9)
 # adaptive_train_losses, adaptive_val_losses, adaptive_train_acc, adaptive_val_acc  = train_and_evaluate_adaptive(adaptive_model, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'adaptive_model_prune')
-
 '''
 Network structure changed: (1000, 500) → (804, 404). Optimizer reset.
 Epoch [1/200], Train Loss: 0.4699, Train Acc: 82.93%, Val Loss: 0.3913, Val Acc: 85.57%
@@ -733,3 +737,171 @@ Test Loss: 0.6976, Test Accuracy: 80.62%
 # Train and evaluate splitting adaptive model
 adaptive_model_split = AdaptiveNetwork(layer_1_size=4, layer_2_size=4, adapt_interval=500, k_split=1.01, k_prune=0.0)
 adaptive_train_losses_split, adaptive_val_losses_split, adaptive_train_acc_split, adaptive_val_acc_split  = train_and_evaluate_adaptive(adaptive_model_split, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'adaptive_model_split')
+
+'''
+Network structure changed: (4, 4) → (5, 5). Optimizer reset.
+Epoch [1/200], Train Loss: 1.6284, Train Acc: 42.84%, Val Loss: 1.2859, Val Acc: 57.55%
+Network structure changed: (5, 5) → (5, 7). Optimizer reset.
+Network structure changed: (5, 7) → (5, 9). Optimizer reset.
+Network structure changed: (5, 9) → (5, 11). Optimizer reset.
+Network structure changed: (5, 11) → (5, 12). Optimizer reset.
+Epoch [10/200], Train Loss: 0.5824, Train Acc: 78.11%, Val Loss: 0.5906, Val Acc: 78.00%
+Epoch [20/200], Train Loss: 0.4792, Train Acc: 83.36%, Val Loss: 0.4968, Val Acc: 82.63%
+Network structure changed: (5, 12) → (6, 12). Optimizer reset.
+Epoch [30/200], Train Loss: 0.4510, Train Acc: 84.35%, Val Loss: 0.4717, Val Acc: 83.29%
+Network structure changed: (6, 12) → (6, 13). Optimizer reset.
+Epoch [40/200], Train Loss: 0.4275, Train Acc: 85.00%, Val Loss: 0.4544, Val Acc: 83.98%
+Epoch [50/200], Train Loss: 0.4092, Train Acc: 85.63%, Val Loss: 0.4416, Val Acc: 84.36%
+Network structure changed: (6, 13) → (7, 13). Optimizer reset.
+Network structure changed: (7, 13) → (9, 13). Optimizer reset.
+Network structure changed: (9, 13) → (10, 13). Optimizer reset.
+Epoch [60/200], Train Loss: 0.4111, Train Acc: 85.47%, Val Loss: 0.4396, Val Acc: 84.59%
+Network structure changed: (10, 13) → (11, 13). Optimizer reset.
+Network structure changed: (11, 13) → (13, 13). Optimizer reset.
+Network structure changed: (13, 13) → (16, 13). Optimizer reset.
+Network structure changed: (16, 13) → (22, 13). Optimizer reset.
+Network structure changed: (22, 13) → (24, 13). Optimizer reset.
+Network structure changed: (24, 13) → (29, 13). Optimizer reset.
+Network structure changed: (29, 13) → (38, 13). Optimizer reset.
+Network structure changed: (38, 13) → (44, 13). Optimizer reset.
+Network structure changed: (44, 13) → (48, 13). Optimizer reset.
+Network structure changed: (48, 13) → (52, 13). Optimizer reset.
+Network structure changed: (52, 13) → (64, 13). Optimizer reset.
+Epoch [70/200], Train Loss: 0.4045, Train Acc: 85.49%, Val Loss: 0.4318, Val Acc: 84.66%
+Network structure changed: (64, 13) → (77, 13). Optimizer reset.
+Network structure changed: (77, 13) → (86, 13). Optimizer reset.
+Network structure changed: (86, 13) → (96, 13). Optimizer reset.
+Network structure changed: (96, 13) → (108, 13). Optimizer reset.
+Network structure changed: (108, 13) → (118, 13). Optimizer reset.
+Network structure changed: (118, 13) → (135, 13). Optimizer reset.
+Network structure changed: (135, 13) → (159, 13). Optimizer reset.
+Network structure changed: (159, 13) → (175, 13). Optimizer reset.
+Network structure changed: (175, 13) → (190, 13). Optimizer reset.
+Network structure changed: (190, 13) → (201, 13). Optimizer reset.
+Network structure changed: (201, 13) → (215, 14). Optimizer reset.
+Network structure changed: (215, 14) → (231, 14). Optimizer reset.
+Network structure changed: (231, 14) → (244, 14). Optimizer reset.
+Network structure changed: (244, 14) → (255, 14). Optimizer reset.
+Network structure changed: (255, 14) → (271, 14). Optimizer reset.
+Network structure changed: (271, 14) → (285, 14). Optimizer reset.
+Epoch [80/200], Train Loss: 0.3071, Train Acc: 88.61%, Val Loss: 0.3506, Val Acc: 87.45%
+Network structure changed: (285, 14) → (300, 14). Optimizer reset.
+Network structure changed: (300, 14) → (315, 14). Optimizer reset.
+Network structure changed: (315, 14) → (331, 14). Optimizer reset.
+Network structure changed: (331, 14) → (344, 14). Optimizer reset.
+Network structure changed: (344, 14) → (371, 14). Optimizer reset.
+Network structure changed: (371, 14) → (403, 15). Optimizer reset.
+Network structure changed: (403, 15) → (426, 15). Optimizer reset.
+Network structure changed: (426, 15) → (446, 15). Optimizer reset.
+Network structure changed: (446, 15) → (482, 15). Optimizer reset.
+Network structure changed: (482, 15) → (521, 15). Optimizer reset.
+Network structure changed: (521, 15) → (571, 16). Optimizer reset.
+Network structure changed: (571, 16) → (605, 16). Optimizer reset.
+Network structure changed: (605, 16) → (642, 16). Optimizer reset.
+Network structure changed: (642, 16) → (684, 16). Optimizer reset.
+Network structure changed: (684, 16) → (722, 16). Optimizer reset.
+Epoch [90/200], Train Loss: 0.2425, Train Acc: 90.99%, Val Loss: 0.3477, Val Acc: 88.20%
+Network structure changed: (722, 16) → (764, 16). Optimizer reset.
+Network structure changed: (764, 16) → (815, 16). Optimizer reset.
+Network structure changed: (815, 16) → (886, 16). Optimizer reset.
+Network structure changed: (886, 16) → (971, 16). Optimizer reset.
+Network structure changed: (971, 16) → (1035, 16). Optimizer reset.
+Network structure changed: (1035, 16) → (1121, 16). Optimizer reset.
+Network structure changed: (1121, 16) → (1214, 16). Optimizer reset.
+Network structure changed: (1214, 16) → (1325, 16). Optimizer reset.
+Network structure changed: (1325, 16) → (1434, 16). Optimizer reset.
+Network structure changed: (1434, 16) → (1544, 17). Optimizer reset.
+Network structure changed: (1544, 17) → (1665, 17). Optimizer reset.
+Network structure changed: (1665, 17) → (1863, 18). Optimizer reset.
+Network structure changed: (1863, 18) → (2052, 19). Optimizer reset.
+Network structure changed: (2052, 19) → (2210, 19). Optimizer reset.
+Network structure changed: (2210, 19) → (2391, 19). Optimizer reset.
+Network structure changed: (2391, 19) → (2562, 19). Optimizer reset.
+Epoch [100/200], Train Loss: 0.2482, Train Acc: 90.85%, Val Loss: 0.3714, Val Acc: 87.53%
+Network structure changed: (2562, 19) → (2753, 19). Optimizer reset.
+Network structure changed: (2753, 19) → (2927, 19). Optimizer reset.
+Network structure changed: (2927, 19) → (3162, 19). Optimizer reset.
+Network structure changed: (3162, 19) → (3384, 19). Optimizer reset.
+Network structure changed: (3384, 19) → (3683, 19). Optimizer reset.
+Network structure changed: (3683, 19) → (3934, 19). Optimizer reset.
+Network structure changed: (3934, 19) → (4219, 19). Optimizer reset.
+Network structure changed: (4219, 19) → (4509, 19). Optimizer reset.
+Network structure changed: (4509, 19) → (4801, 19). Optimizer reset.
+Network structure changed: (4801, 19) → (5137, 19). Optimizer reset.
+Network structure changed: (5137, 19) → (5457, 19). Optimizer reset.
+Network structure changed: (5457, 19) → (5780, 19). Optimizer reset.
+Network structure changed: (5780, 19) → (6167, 19). Optimizer reset.
+Network structure changed: (6167, 19) → (6479, 19). Optimizer reset.
+Network structure changed: (6479, 19) → (6825, 19). Optimizer reset.
+Network structure changed: (6825, 19) → (7250, 19). Optimizer reset.
+Epoch [110/200], Train Loss: 0.2533, Train Acc: 90.60%, Val Loss: 0.4230, Val Acc: 85.35%
+Network structure changed: (7250, 19) → (7641, 19). Optimizer reset.
+Network structure changed: (7641, 19) → (8039, 19). Optimizer reset.
+Network structure changed: (8039, 19) → (8382, 19). Optimizer reset.
+Network structure changed: (8382, 19) → (8733, 19). Optimizer reset.
+Network structure changed: (8733, 19) → (9191, 19). Optimizer reset.
+Network structure changed: (9191, 19) → (9593, 19). Optimizer reset.
+Network structure changed: (9593, 19) → (9921, 19). Optimizer reset.
+Network structure changed: (9921, 19) → (10344, 19). Optimizer reset.
+Network structure changed: (10344, 19) → (10847, 20). Optimizer reset.
+
+Best model structure: Layer 1 size = 1325, Layer 2 size = 16
+Restoring best model structure: (10847, 20) → (1325, 16)
+
+Best model (selected by validation loss):
+Test Loss: 0.3772, Test Accuracy: 86.96%
+'''
+
+# Train and evaluate splitting and pruning adaptive model
+adaptive_model_split_prune = AdaptiveNetwork(layer_1_size=64, layer_2_size=32, adapt_interval=500, k_split=2, k_prune=0.5)
+adaptive_train_losses_split_prune, adaptive_val_losses_split_prune, adaptive_train_acc_split_prune, adaptive_val_acc_split_prune  = train_and_evaluate_adaptive(adaptive_model_split_prune, train_dataloader, val_dataloader, test_dataloader, EPOCHS, 'adaptive_model_split_prune')
+
+'''
+Epoch [1/200], Train Loss: 0.5988, Train Acc: 78.70%, Val Loss: 0.4642, Val Acc: 83.05%
+Network structure changed: (64, 32) → (64, 31). Optimizer reset.
+Network structure changed: (64, 31) → (63, 30). Optimizer reset.
+Network structure changed: (63, 30) → (62, 30). Optimizer reset.
+Epoch [10/200], Train Loss: 0.2697, Train Acc: 90.04%, Val Loss: 0.3303, Val Acc: 88.03%
+Network structure changed: (62, 30) → (61, 30). Optimizer reset.
+Epoch [20/200], Train Loss: 0.2094, Train Acc: 92.29%, Val Loss: 0.3371, Val Acc: 88.38%
+Epoch [30/200], Train Loss: 0.1686, Train Acc: 93.73%, Val Loss: 0.3505, Val Acc: 88.63%
+Epoch [40/200], Train Loss: 0.1412, Train Acc: 94.79%, Val Loss: 0.3830, Val Acc: 88.80%
+Epoch [50/200], Train Loss: 0.1159, Train Acc: 95.80%, Val Loss: 0.4336, Val Acc: 88.34%
+Network structure changed: (61, 30) → (61, 31). Optimizer reset.
+Epoch [60/200], Train Loss: 0.0996, Train Acc: 96.30%, Val Loss: 0.4941, Val Acc: 87.68%
+Network structure changed: (61, 31) → (60, 31). Optimizer reset.
+Epoch [70/200], Train Loss: 0.0885, Train Acc: 96.74%, Val Loss: 0.5285, Val Acc: 87.83%
+Network structure changed: (60, 31) → (59, 31). Optimizer reset.
+Epoch [80/200], Train Loss: 0.0793, Train Acc: 97.08%, Val Loss: 0.5796, Val Acc: 87.81%
+Epoch [90/200], Train Loss: 0.0700, Train Acc: 97.52%, Val Loss: 0.6263, Val Acc: 87.66%
+Network structure changed: (59, 31) → (58, 31). Optimizer reset.
+Network structure changed: (58, 31) → (58, 30). Optimizer reset.
+Network structure changed: (58, 30) → (57, 30). Optimizer reset.
+Epoch [100/200], Train Loss: 0.0693, Train Acc: 97.36%, Val Loss: 0.6811, Val Acc: 86.96%
+Network structure changed: (57, 30) → (56, 30). Optimizer reset.
+Network structure changed: (56, 30) → (56, 29). Optimizer reset.
+Epoch [110/200], Train Loss: 0.0694, Train Acc: 97.44%, Val Loss: 0.6765, Val Acc: 87.33%
+Network structure changed: (56, 29) → (55, 29). Optimizer reset.
+Epoch [120/200], Train Loss: 0.0629, Train Acc: 97.72%, Val Loss: 0.6989, Val Acc: 86.81%
+Network structure changed: (55, 29) → (56, 29). Optimizer reset.
+Network structure changed: (56, 29) → (55, 29). Optimizer reset.
+Epoch [130/200], Train Loss: 0.0598, Train Acc: 97.83%, Val Loss: 0.7597, Val Acc: 86.85%
+Network structure changed: (55, 29) → (55, 28). Optimizer reset.
+Epoch [140/200], Train Loss: 0.0559, Train Acc: 97.92%, Val Loss: 0.7690, Val Acc: 87.01%
+Network structure changed: (55, 28) → (56, 28). Optimizer reset.
+Network structure changed: (56, 28) → (55, 28). Optimizer reset.
+Epoch [150/200], Train Loss: 0.0570, Train Acc: 97.88%, Val Loss: 0.7717, Val Acc: 87.30%
+Network structure changed: (55, 28) → (54, 28). Optimizer reset.
+Epoch [160/200], Train Loss: 0.0596, Train Acc: 97.78%, Val Loss: 0.8009, Val Acc: 87.10%
+Epoch [170/200], Train Loss: 0.0471, Train Acc: 98.30%, Val Loss: 0.8151, Val Acc: 87.07%
+Network structure changed: (54, 28) → (54, 27). Optimizer reset.
+Epoch [180/200], Train Loss: 0.0512, Train Acc: 98.19%, Val Loss: 0.8400, Val Acc: 87.01%
+Epoch [190/200], Train Loss: 0.0461, Train Acc: 98.28%, Val Loss: 0.9178, Val Acc: 86.71%
+Epoch [200/200], Train Loss: 0.0383, Train Acc: 98.61%, Val Loss: 0.9423, Val Acc: 86.50%
+
+Best model structure: Layer 1 size = 62, Layer 2 size = 30
+Restoring best model structure: (54, 27) → (62, 30)
+
+Best model (selected by validation loss):
+Test Loss: 0.4772, Test Accuracy: 86.39%
+'''
