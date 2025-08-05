@@ -1,0 +1,15 @@
+{
+    "Hyper Params": {
+        "min_gap_ratio": 0.5,
+        "min_improvement_potential_ratio": 0.2
+    },
+    "Results": {
+        "synthetic_linear": 8.0,
+        "two_moons": 4.0,
+        "friedman1": 16.0,
+        "uci_concrete": 32.0,
+        "uci_protein": 4.0,
+        "uci_covertype": 16.0,
+        "synthetic_multimodal": 8.0
+    }
+}

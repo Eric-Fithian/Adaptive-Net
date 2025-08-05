@@ -309,6 +309,7 @@ def train_and_evaluate_adaptive(model, train_loader, val_loader, test_loader, ep
             
             if old_structure != new_structure:
                 # Structure changed, recreate optimizer with fresh state
+                # TODO: use add new param group to optimizer so that we don't have to recreate the optimizer and lose state
                 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
                 print(f"Network structure changed: {old_structure} → {new_structure}. Optimizer reset.")
                 # print((new_structure[0] * new_structure[1]))
