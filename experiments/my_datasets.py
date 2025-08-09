@@ -45,6 +45,7 @@ def _to_loaders(
     test_size: float = 0.2,
     regression: bool = True,
     seed: int = 0,
+    device: str | torch.device = "cpu",
 ) -> Tuple[DataLoader, DataLoader]:
     """Split, standardise, tensorise, return train/val loaders."""
 
@@ -66,6 +67,12 @@ def _to_loaders(
         y_train_t = torch.as_tensor(y_train.astype(np.int64))
         y_val_t = torch.as_tensor(y_val.astype(np.int64))
 
+    # Move tensors to device before creating datasets
+    x_train_t = x_train_t.to(device=device)
+    y_train_t = y_train_t.to(device=device)
+    x_val_t = x_val_t.to(device=device)
+    y_val_t = y_val_t.to(device=device)
+    
     train_ds = TensorDataset(x_train_t, y_train_t)
     val_ds = TensorDataset(x_val_t, y_val_t)
 
@@ -150,7 +157,7 @@ _DATASET_REGISTRY: Dict[str, Callable[..., Tuple[DataLoader, DataLoader]]] = {
     "friedman1": _friedman1,
     "uci_concrete": _uci_concrete,
     "uci_protein": _uci_protein,
-    "uci_covertype": _uci_covertype,
+    # "uci_covertype": _uci_covertype,
     "synthetic_multimodal": _synthetic_multimodal,
 }
 

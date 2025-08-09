@@ -42,9 +42,35 @@ class OrthogonalDecomp(WeightSplitStrategy):
     """Split into orthogonal halves of equal L2-norm that sum to v."""
     def split(self, v):
         w, r = v.clone(), torch.randn_like(v)
-        r -= (w @ r) / (w @ w) * w
-        r = r / r.norm() * w.norm()
-        return 0.5 * (w + r), 0.5 * (w - r)
+        # Guard: if ||w|| ~ 0, fall back to equal split (function-preserving)
+        w_norm_sq = float((w @ w).item()) if w.numel() > 0 else 0.0
+        eps = 1e-12
+        if w_norm_sq <= eps:
+            half = 0.5 * w
+            return half, half.clone()
+        # Make r orthogonal to w
+        r = r - (float((w @ r).item()) / w_norm_sq) * w
+        # Guard: if r collapsed to 0, sample another random vector, fall back if needed
+        r_norm = float(r.norm().item())
+        if r_norm <= eps:
+            # try another random draw once
+            r = torch.randn_like(w)
+            r = r - (float((w @ r).item()) / w_norm_sq) * w
+            r_norm = float(r.norm().item())
+            if r_norm <= eps:
+                half = 0.5 * w
+                return half, half.clone()
+        # Scale r to match ||w||
+        r = r / r_norm * float(w.norm().item())
+        v_kept = 0.5 * (w + r)
+        v_added = 0.5 * (w - r)
+        # Sanity: ensure sum equals original within tolerance
+        if not torch.allclose(v_kept + v_added, w, atol=1e-8, rtol=1e-6):
+            import warnings
+            warnings.warn("OrthogonalDecomp sum check failed; falling back to half split.")
+            half = 0.5 * w
+            return half, half.clone()
+        return v_kept, v_added
 
 
 # Helpful decorator to add noise to any WeightSplitStrategy

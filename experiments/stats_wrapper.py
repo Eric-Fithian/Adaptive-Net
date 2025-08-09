@@ -27,6 +27,33 @@ class StatsWrapper(nn.Module):
         self._extract_all_layers()
         self._register_hooks()
 
+    def __len__(self) -> int:
+        return len(self.model)
+
+    def __iter__(self):
+        return iter(self.model)
+
+    def __getitem__(self, idx: int):
+        return self.model[idx]
+
+    def __repr__(self) -> str:
+        return f"StatsWrapper({repr(self.model)})"
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            # Try the wrapper first
+            return super().__getattr__(name)
+        except AttributeError:
+            # Delegate to the underlying model
+            return getattr(self.model, name)
+
+    def __dir__(self) -> List[str]:
+        # Combine attributes so that tab completion works nicely
+        return sorted(set(list(super().__dir__()) + dir(self.model)))
+
+    def forward(self, *args, **kwargs) -> Any:
+        return self.model(*args, **kwargs)
+
     def _extract_all_layers(self) -> None:
         """Extract ALL layers (Linear + activations) in sequential order."""
         def extract_from_sequential(module, prefix=""):
@@ -45,9 +72,6 @@ class StatsWrapper(nn.Module):
                     self.layer_types.append(type(child).__name__)
         
         extract_from_sequential(self.model)
-
-    def forward(self, x: torch.Tensor) -> Any:
-        return self.model(x)
 
     def _register_hooks(self) -> None:
         """Register hooks to capture outputs and gradients at each layer."""
@@ -74,6 +98,7 @@ class StatsWrapper(nn.Module):
         self._layer_outputs.clear()
         self._layer_grads.clear()
 
+    @torch.no_grad()
     def get_neuron_stats(self, input_layer_idx: int, output_layer_idx: int, neuron_idx: int) -> Dict[str, Any]:
         """
         Get comprehensive statistics for a specific neuron.
@@ -102,10 +127,16 @@ class StatsWrapper(nn.Module):
 
         stats = {}
         
+        def _safe_var_1d(vec: torch.Tensor) -> float:
+            # Return 0.0 variance when there is only 1 element to avoid NaNs and undefined stats
+            if vec.numel() < 2:
+                return 0.0
+            return vec.var(unbiased=False).item()
+
         # Input weights: weights from input_layer that connect TO this neuron
         input_weights = input_layer.weight[neuron_idx, :].detach()  # Shape: [in_features]
         stats['input_weights_mean'] = input_weights.mean().item()
-        stats['input_weights_var'] = input_weights.var(unbiased=False).item()
+        stats['input_weights_var'] = _safe_var_1d(input_weights)
         
         # Output weights: weights from output_layer that connect FROM this neuron
         if neuron_idx >= output_layer.in_features:
@@ -114,7 +145,7 @@ class StatsWrapper(nn.Module):
         else:
             output_weights = output_layer.weight[:, neuron_idx].detach()  # Shape: [out_features]
             stats['output_weights_mean'] = output_weights.mean().item()
-            stats['output_weights_var'] = output_weights.var(unbiased=False).item()
+            stats['output_weights_var'] = _safe_var_1d(output_weights)
         
         # Bias term from input layer for this neuron
         if input_layer.bias is not None:
@@ -125,23 +156,19 @@ class StatsWrapper(nn.Module):
         # Pre-activation: output of input_layer before any activation function
         if input_layer_idx not in self._layer_outputs:
             stats['pre_activation_mean'] = None
-            stats['pre_activation_var'] = None
         else:
             pre_activation = self._layer_outputs[input_layer_idx]
             if len(pre_activation.shape) < 2:  # Not [batch_size, features] or higher dims
                 stats['pre_activation_mean'] = None
-                stats['pre_activation_var'] = None
             else:
                 # Flatten to [batch_size, -1] then select neuron
                 pre_activation_flat = pre_activation.view(pre_activation.shape[0], -1)
                 if neuron_idx >= pre_activation_flat.shape[1]:
                     stats['pre_activation_mean'] = None
-                    stats['pre_activation_var'] = None
                 else:
                     neuron_pre_activation = pre_activation_flat[:, neuron_idx]  # Shape: [batch_size]
                     # Aggregate across batch dimension
                     stats['pre_activation_mean'] = neuron_pre_activation.mean().item()
-                    stats['pre_activation_var'] = neuron_pre_activation.var(unbiased=False).item()
         
         # Post-activation: output after going through activation layers between input and output
         # Find the last activation layer before output_layer_idx
@@ -153,22 +180,18 @@ class StatsWrapper(nn.Module):
         if post_activation_layer_idx is None or post_activation_layer_idx not in self._layer_outputs:
             # No activation function found, post-activation = pre-activation
             stats['post_activation_mean'] = stats['pre_activation_mean']
-            stats['post_activation_var'] = stats['pre_activation_var']
         else:
             post_activation = self._layer_outputs[post_activation_layer_idx]
             if len(post_activation.shape) < 2:
                 stats['post_activation_mean'] = None
-                stats['post_activation_var'] = None
             else:
                 post_activation_flat = post_activation.view(post_activation.shape[0], -1)
                 if neuron_idx >= post_activation_flat.shape[1]:
                     stats['post_activation_mean'] = None
-                    stats['post_activation_var'] = None
                 else:
                     neuron_post_activation = post_activation_flat[:, neuron_idx]  # Shape: [batch_size]
                     # Aggregate across batch dimension
                     stats['post_activation_mean'] = neuron_post_activation.mean().item()
-                    stats['post_activation_var'] = neuron_post_activation.var(unbiased=False).item()
         
         # Gradients with respect to input weights
         if input_layer.weight.grad is None:
@@ -177,7 +200,7 @@ class StatsWrapper(nn.Module):
         else:
             input_weight_grads = input_layer.weight.grad[neuron_idx, :].detach()
             stats['input_weight_grads_mean'] = input_weight_grads.mean().item()
-            stats['input_weight_grads_var'] = input_weight_grads.var(unbiased=False).item()
+            stats['input_weight_grads_var'] = _safe_var_1d(input_weight_grads)
         
         # Gradients with respect to output weights  
         if output_layer.weight.grad is None or neuron_idx >= output_layer.in_features:
@@ -186,50 +209,71 @@ class StatsWrapper(nn.Module):
         else:
             output_weight_grads = output_layer.weight.grad[:, neuron_idx].detach()
             stats['output_weight_grads_mean'] = output_weight_grads.mean().item()
-            stats['output_weight_grads_var'] = output_weight_grads.var(unbiased=False).item()
+            stats['output_weight_grads_var'] = _safe_var_1d(output_weight_grads)
         
         # Gradient with respect to pre-activation (gradient wrt Linear layer output, before activation)
         if input_layer_idx not in self._layer_grads:
             stats['pre_activation_grad_mean'] = None
-            stats['pre_activation_grad_var'] = None
         else:
             pre_activation_grad = self._layer_grads[input_layer_idx]
             if len(pre_activation_grad.shape) < 2:
                 stats['pre_activation_grad_mean'] = None
-                stats['pre_activation_grad_var'] = None
             else:
                 pre_activation_grad_flat = pre_activation_grad.view(pre_activation_grad.shape[0], -1)
                 if neuron_idx >= pre_activation_grad_flat.shape[1]:
                     stats['pre_activation_grad_mean'] = None
-                    stats['pre_activation_grad_var'] = None
                 else:
                     neuron_pre_grad = pre_activation_grad_flat[:, neuron_idx]  # Shape: [batch_size]
                     # Aggregate across batch dimension
                     stats['pre_activation_grad_mean'] = neuron_pre_grad.mean().item()
-                    stats['pre_activation_grad_var'] = neuron_pre_grad.var(unbiased=False).item()
         
         # Gradient with respect to post-activation (gradient wrt activation layer output, after activation)
         if post_activation_layer_idx is None or post_activation_layer_idx not in self._layer_grads:
             # No separate post-activation gradient - use pre-activation grad
             stats['post_activation_grad_mean'] = stats['pre_activation_grad_mean']
-            stats['post_activation_grad_var'] = stats['pre_activation_grad_var']
         else:
             post_activation_grad = self._layer_grads[post_activation_layer_idx]
             if len(post_activation_grad.shape) < 2:
                 stats['post_activation_grad_mean'] = None
-                stats['post_activation_grad_var'] = None
             else:
                 post_activation_grad_flat = post_activation_grad.view(post_activation_grad.shape[0], -1)
                 if neuron_idx >= post_activation_grad_flat.shape[1]:
                     stats['post_activation_grad_mean'] = None
-                    stats['post_activation_grad_var'] = None
                 else:
                     neuron_post_grad = post_activation_grad_flat[:, neuron_idx]  # Shape: [batch_size]
                     # Aggregate across batch dimension
                     stats['post_activation_grad_mean'] = neuron_post_grad.mean().item()
-                    stats['post_activation_grad_var'] = neuron_post_grad.var(unbiased=False).item()
         
         return stats
+
+    @torch.no_grad()
+    def get_layer_neuron_stats(self, input_layer_idx: int, output_layer_idx: int) -> List[Dict[str, Any]]:
+        """
+        Get statistics for ALL neurons in the layer connecting `input_layer_idx` -> `output_layer_idx`.
+
+        This captures a snapshot of per-neuron metrics at the current time (based on the
+        most recent forward/backward hooks) so you can compute within-layer normalization
+        (z-scores, percentiles) at the action time.
+        """
+        if input_layer_idx >= len(self.layers) or output_layer_idx >= len(self.layers):
+            raise ValueError(f"Layer indices out of range. Model has {len(self.layers)} layers.")
+
+        input_layer = self.layers[input_layer_idx]
+        output_layer = self.layers[output_layer_idx]
+
+        if not isinstance(input_layer, nn.Linear):
+            raise ValueError(f"Input layer (idx {input_layer_idx}) must be Linear, got {type(input_layer)}")
+        if not isinstance(output_layer, nn.Linear):
+            raise ValueError(f"Output layer (idx {output_layer_idx}) must be Linear, got {type(output_layer)}")
+
+        num_neurons = input_layer.out_features
+        stats_list: List[Dict[str, Any]] = []
+        for neuron_idx in range(num_neurons):
+            s = self.get_neuron_stats(input_layer_idx, output_layer_idx, neuron_idx)
+            s['neuron_idx'] = neuron_idx
+            stats_list.append(s)
+
+        return stats_list
 
     def get_layer_info(self) -> List[Tuple[int, str, str, int]]:
         """Get information about available layers for analysis."""
@@ -267,6 +311,7 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     # Forward + backward
+    model.train()
     out = model(x)
     loss = criterion(out, target)
     loss.backward()
