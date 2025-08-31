@@ -1,0 +1,37 @@
+{
+    "synthetic_linear": {
+        "UP": 4,
+        "NE": 16,
+        "OP": 32
+    },
+    "two_moons": {
+        "UP": 4,
+        "NE": 8,
+        "OP": 16
+    },
+    "friedman1": {
+        "UP": 4,
+        "NE": 16,
+        "OP": 32
+    },
+    "uci_concrete": {
+        "UP": 32,
+        "NE": 64,
+        "OP": 128
+    },
+    "uci_protein": {
+        "UP": 4,
+        "NE": 8,
+        "OP": 16
+    },
+    "uci_covertype": {
+        "UP": 16,
+        "NE": 64,
+        "OP": 128
+    },
+    "synthetic_multimodal": {
+        "UP": 4,
+        "NE": 16,
+        "OP": 32
+    }
+}

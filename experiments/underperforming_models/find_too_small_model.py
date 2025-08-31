@@ -356,7 +356,7 @@ if __name__ == "__main__":
         f.write(f"USE_COSINE_SCHEDULER: {USE_COSINE_SCHEDULER}\n")
         f.write(f"WARMUP_EPOCHS: {WARMUP_EPOCHS}\n")
 
-    for dataset_name, (train_loader, test_loader) in get_all_datasets(batch_size=BATCH_SIZE, test_size=TEST_SIZE):
+    for dataset_name, (train_loader, test_loader) in get_all_datasets(batch_size=BATCH_SIZE, test_size=TEST_SIZE)[3:5]:
         task_type = _DATASET_TASK_TYPE[dataset_name]
         n_features = train_loader.dataset.tensors[0].shape[1]
         
