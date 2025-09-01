@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("experiments/correlation/20250817_185145/correlation_experiment_results_synthetic_linear.csv")
+df = pd.read_csv("experiments/correlation/20250831_125711/correlation_experiment_results_synthetic_linear.csv")
 
 # convert to long format
 id_cols = ["regime_name", "starting_width", "init_id"]
@@ -10,6 +10,9 @@ h_cols = [c for c in df.columns if c.startswith("delta_test_loss_at_h")]
 metric_cols = [c for c in df.columns if c not in id_cols+h_cols]
 
 df_long = df.melt(id_vars=id_cols+h_cols, value_vars=metric_cols, var_name="metric", value_name="value")
+
+df_long[df_long.isna().any(axis=1)]
+
 
 tmp_agg_names = [c for c in metric_cols if c.startswith("tmp")]
 atomic_names = [c for c in metric_cols if c not in tmp_agg_names]

@@ -93,29 +93,75 @@ class StatsWrapper(nn.Module):
         linear_indices: List[int] = [i for i, layer in enumerate(self.layers) if isinstance(layer, nn.Linear)]
         for idx_pos, i in enumerate(linear_indices):
             j = linear_indices[idx_pos + 1] if (idx_pos + 1) < len(linear_indices) else None
-            self._linear_to_next_linear[i] = j
+            if j is not None:
+                self._linear_to_next_linear[i] = j
+
+    # def _register_hooks(self) -> None:
+    #     """Register only forward tensor hooks on all layers."""
+    #     if getattr(self, "_hooks_registered", False):
+    #         return
+    #     self._hooks_registered = True
+
+    #     for layer_idx, layer in enumerate(self.layers):
+    #         layer.register_forward_hook(self._make_forward_hook(layer_idx))
+
+
+    # def _make_forward_hook(self, layer_idx: int):
+    #     def hook(module, inputs, output):
+    #         if isinstance(output, torch.Tensor):
+    #             # cache forward activations for stats (pre/post activation means)
+    #             self._layer_outputs[layer_idx] = output.detach()
+    #             # cache gradient wrt this tensor when backprop reaches it
+    #             if output.requires_grad:
+    #                 def save_grad(g, i=layer_idx):
+    #                     self._layer_grads[i] = g.detach()
+    #                 output.register_hook(save_grad)
+    #     return hook
 
     def _register_hooks(self) -> None:
-        """Register only forward tensor hooks on all layers."""
-        if getattr(self, "_hooks_registered", False):
-            return
+        if getattr(self, "_hooks_registered", False): return
         self._hooks_registered = True
-
         for layer_idx, layer in enumerate(self.layers):
             layer.register_forward_hook(self._make_forward_hook(layer_idx))
-
+            layer.register_full_backward_hook(self._make_backward_hook(layer_idx))  # <-- add
 
     def _make_forward_hook(self, layer_idx: int):
         def hook(module, inputs, output):
             if isinstance(output, torch.Tensor):
-                # cache forward activations for stats (pre/post activation means)
                 self._layer_outputs[layer_idx] = output.detach()
-                # cache gradient wrt this tensor when backprop reaches it
-                if output.requires_grad:
-                    def save_grad(g, i=layer_idx):
-                        self._layer_grads[i] = g.detach()
-                    output.register_hook(save_grad)
         return hook
+
+    def _make_backward_hook(self, layer_idx: int):
+        def bhook(module, grad_input, grad_output):
+            # grad_output[0] is grad wrt module's output
+            if grad_output and isinstance(grad_output[0], torch.Tensor):
+                self._layer_grads[layer_idx] = grad_output[0].detach()
+        return bhook
+
+    def ensure_hooks(self) -> None:
+        # remove old handles if you track them; otherwise just re-register
+        self._layer_outputs.clear()
+        self._layer_grads.clear()
+        self.layers.clear(); self.layer_names.clear(); self.layer_types.clear()
+        self._extract_all_layers()
+        self._build_adjacent_linear_map()
+        self._hooks_registered = False
+        self._register_hooks()
+
+    def __deepcopy__(self, memo):
+        import copy
+        # 1) deepcopy the wrapped model modules/params
+        new_model = copy.deepcopy(self.model, memo)
+
+        # 2) build a fresh wrapper (this runs __init__, rebuilds layers,
+        #    and re-registers forward/backward hooks bound to the *new* self)
+        new = StatsWrapper(new_model, buffer_size=self._buffer_size)
+
+        # 3) optionally carry over temporal buffers (NOT per-step caches)
+        if self._buffer_size is not None and self._temporal_buffers:
+            new.load_temporal_state(self.dump_temporal_state())
+
+        return new
 
 
 
@@ -146,15 +192,10 @@ class StatsWrapper(nn.Module):
         Call immediately after loss.backward() and before optimizer.step().
         Uses parameter .grad (now populated) + cached activations / tensor-grads.
         """
+        
         for in_idx, out_idx in self._linear_to_next_linear.items():
-            if out_idx is None:
-                continue
-            try:
-                snap = self.get_layer_neuron_stats_atomic(in_idx, out_idx)
-            except Exception:
-                snap = None
-            if snap:
-                self._append_temporal_snapshot(in_idx, out_idx, snap)
+            snap = self._get_layer_neuron_stats_atomic(in_idx, out_idx)
+            self._append_temporal_snapshot(in_idx, out_idx, snap)
         # release per-step caches
         self.clear()
 
@@ -265,7 +306,7 @@ class StatsWrapper(nn.Module):
                 dq.append(None if value is None else float(value))
 
     @torch.no_grad()
-    def get_neuron_stats_atomic(self, input_layer_idx: int, output_layer_idx: int, neuron_idx: int) -> Dict[str, Any]:
+    def _get_neuron_stats_atomic(self, input_layer_idx: int, output_layer_idx: int, neuron_idx: int) -> Dict[str, Any]:
         """
         Get local spatial atomic statistics for a specific neuron (no percentiles).
         
@@ -414,18 +455,36 @@ class StatsWrapper(nn.Module):
 
     @torch.no_grad()
     def get_neuron_stats(self, input_layer_idx: int, output_layer_idx: int, neuron_idx: int) -> Dict[str, Any]:
-        """Higher-level per-neuron stats including within-layer percentiles.
+        """Get the most recent non-temporal stats for a specific neuron from the temporal buffer.
 
-        Computes the whole-layer snapshot with percentiles, then returns the selected neuron's dict.
+        Returns the most recent atomic stats (no percentiles) for the specified neuron.
         """
-        layer_snapshot = self.get_layer_neuron_stats(input_layer_idx, output_layer_idx)
-        for row in layer_snapshot:
-            if row.get('neuron_idx') == neuron_idx:
-                return row
-        raise ValueError(f"neuron_idx {neuron_idx} not found in layer snapshot for input {input_layer_idx} -> output {output_layer_idx}")
+        if self._buffer_size is None:
+            raise RuntimeError("Temporal buffers are not enabled; construct StatsWrapper with buffer_size > 0")
+        
+        key = (input_layer_idx, output_layer_idx)
+        layer_buf = self._temporal_buffers.get(key)
+        if not layer_buf:
+            raise ValueError(f"No temporal buffer found for layer pair {input_layer_idx} -> {output_layer_idx}")
+        
+        neuron_buf = layer_buf.get(neuron_idx)
+        if not neuron_buf:
+            raise ValueError(f"No temporal buffer found for neuron {neuron_idx} in layer pair {input_layer_idx} -> {output_layer_idx}")
+        
+        # Get the most recent value for each metric
+        stats = {'neuron_idx': neuron_idx}
+        for metric_name, dq in neuron_buf.items():
+            if dq:  # If deque is not empty
+                # Get the most recent value (last in deque)
+                most_recent = dq[-1]
+                stats[metric_name] = most_recent
+            else:
+                stats[metric_name] = None
+        
+        return stats
 
     @torch.no_grad()
-    def get_layer_neuron_stats_atomic(self, input_layer_idx: int, output_layer_idx: int) -> List[Dict[str, Any]]:
+    def _get_layer_neuron_stats_atomic(self, input_layer_idx: int, output_layer_idx: int) -> List[Dict[str, Any]]:
         """
         Get atomic statistics for ALL neurons in the layer connecting `input_layer_idx` -> `output_layer_idx`.
 
@@ -446,52 +505,52 @@ class StatsWrapper(nn.Module):
         num_neurons = input_layer.out_features
         stats_list: List[Dict[str, Any]] = []
         for neuron_idx in range(num_neurons):
-            s = self.get_neuron_stats_atomic(input_layer_idx, output_layer_idx, neuron_idx)
+            s = self._get_neuron_stats_atomic(input_layer_idx, output_layer_idx, neuron_idx)
             s['neuron_idx'] = neuron_idx
             stats_list.append(s)
 
         return stats_list
 
-    @torch.no_grad()
-    def get_layer_neuron_stats(self, input_layer_idx: int, output_layer_idx: int) -> List[Dict[str, Any]]:
-        """
-        Get statistics for ALL neurons in the layer connecting `input_layer_idx` -> `output_layer_idx`,
-        including within-layer percentiles.
+    # @torch.no_grad()
+    # def _get_layer_neuron_stats(self, input_layer_idx: int, output_layer_idx: int) -> List[Dict[str, Any]]:
+    #     """
+    #     Get statistics for ALL neurons in the layer connecting `input_layer_idx` -> `output_layer_idx`,
+    #     including within-layer percentiles.
 
-        This captures a snapshot of per-neuron metrics at the current time (based on the
-        most recent forward/backward hooks) and computes percentiles across the layer.
-        """
-        stats_list = self.get_layer_neuron_stats_atomic(input_layer_idx, output_layer_idx)
+    #     This captures a snapshot of per-neuron metrics at the current time (based on the
+    #     most recent forward/backward hooks) and computes percentiles across the layer.
+    #     """
+    #     stats_list = self._get_layer_neuron_stats_atomic(input_layer_idx, output_layer_idx)
 
-        if not stats_list:
-            return stats_list
+    #     if not stats_list:
+    #         return stats_list
 
-        # Compute within-layer percentiles for each metric and attach as {metric}_pct
-        # Build arrays per key from layer_snapshot
-        keys = [k for k in stats_list[0].keys() if k not in ('neuron_idx',)]
-        arrays: Dict[str, List[float]] = {}
-        for k in keys:
-            vals: List[float] = []
-            for row in stats_list:
-                v = row.get(k, None)
-                if v is not None:
-                    vals.append(float(v))
-            arrays[k] = vals
-        # Attach percentiles
-        for row in stats_list:
-            for k in keys:
-                v = row.get(k, None)
-                arr = arrays[k]
-                if v is None or len(arr) == 0:
-                    row[f"{k}_pct"] = None
-                else:
-                    # Percentile as fraction of layer neurons with strictly lower value
-                    try:
-                        row[f"{k}_pct"] = float((sum(1 for x in arr if x < float(v))) / len(arr))
-                    except Exception:
-                        row[f"{k}_pct"] = None
+    #     # Compute within-layer percentiles for each metric and attach as {metric}_pct
+    #     # Build arrays per key from layer_snapshot
+    #     keys = [k for k in stats_list[0].keys() if k not in ('neuron_idx',)]
+    #     arrays: Dict[str, List[float]] = {}
+    #     for k in keys:
+    #         vals: List[float] = []
+    #         for row in stats_list:
+    #             v = row.get(k, None)
+    #             if v is not None:
+    #                 vals.append(float(v))
+    #         arrays[k] = vals
+    #     # Attach percentiles
+    #     for row in stats_list:
+    #         for k in keys:
+    #             v = row.get(k, None)
+    #             arr = arrays[k]
+    #             if v is None or len(arr) == 0:
+    #                 row[f"{k}_pct"] = None
+    #             else:
+    #                 # Percentile as fraction of layer neurons with strictly lower value
+    #                 try:
+    #                     row[f"{k}_pct"] = float((sum(1 for x in arr if x < float(v))) / len(arr))
+    #                 except Exception:
+    #                     row[f"{k}_pct"] = None
 
-        return stats_list
+    #     return stats_list
 
     @torch.no_grad()
     def get_neuron_stats_temporal(
@@ -529,7 +588,7 @@ class StatsWrapper(nn.Module):
         return out
 
     @torch.no_grad()
-    def get_layer_neuron_stats_temporal(
+    def _get_layer_neuron_stats_temporal(
         self,
         input_layer_idx: int,
         output_layer_idx: int,
@@ -666,7 +725,7 @@ if __name__ == '__main__':
     input_layer_idx = 0
     output_layer_idx = 2
     print(f"Collecting temporal stats with window={W} for layer pair {input_layer_idx}->{output_layer_idx} ...")
-    layer_temporal = model.get_layer_neuron_stats_temporal(input_layer_idx, output_layer_idx, W)
+    layer_temporal = model._get_layer_neuron_stats_temporal(input_layer_idx, output_layer_idx, W)
     
     if not layer_temporal:
         print("No temporal stats available (buffer may be empty).")

@@ -103,6 +103,9 @@ def get_metrics_to_performances_for_split_action(
                 warmup_epochs=warmup_epochs,
                 use_cosine=True,
             )
+            # check if the hooks are registerd
+            wrapper = trainer_pre.model  # the deep-copied StatsWrapper
+
             pre_result = trainer_pre.fit(
                 train_loader=train_loader,
                 test_loader=test_loader,
@@ -149,7 +152,6 @@ def get_metrics_to_performances_for_split_action(
                     use_cosine=True,
                 )
                 trainer_treat.load_snapshot(pre_state)
-
                 # Capture enriched stats at the action boundary and perform split immediately
                 wrapper: StatsWrapper = trainer_treat.model
                 stats = wrapper.get_neuron_stats(0, 2, neuron_idx)
