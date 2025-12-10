@@ -158,6 +158,76 @@ def split_neuron(
         out_l.set_input_feature(neuron_idx, v_kept)
         out_l.add_input_feature(v_added)
 
+
+def prune_neuron(
+    *,
+    network: nn.Module,
+    input_layer_idx: int,
+    output_layer_idx: int,
+    neuron_idx: int,
+) -> None:
+    """
+    Remove the hidden neuron `neuron_idx` between two adjacent Linear layers:
+      - `network[input_layer_idx]` provides the incoming weights & bias
+      - `network[output_layer_idx]` provides the outgoing weights
+
+    WARNING: `network` is modified in place.
+
+    Args:
+        network: The network to prune the neuron from.
+        input_layer_idx: The index of the input layer.
+        output_layer_idx: The index of the output layer.
+        neuron_idx: The index of the neuron to prune.
+
+    Returns:
+        None
+    """
+    # --- validate ---
+    if not (
+        0 <= input_layer_idx < len(network)
+        and 0 < output_layer_idx < len(network)
+    ):
+        raise ValueError("Input and output layers must be valid indicies.")
+    if not (
+        0 <= neuron_idx < network[input_layer_idx].out_features
+        and 0 <= neuron_idx < network[output_layer_idx].in_features
+    ):
+        raise ValueError("Selected unit is not a mutable hidden neuron.")
+    if not (
+        isinstance(network[input_layer_idx], WidenableLinear)
+        and isinstance(network[output_layer_idx], WidenableLinear)
+    ):
+        raise ValueError("Input and output layers must be WidenableLinear.")
+
+    # Check that the dimensions match to indirectly check that the layers are adjacent. Okay if there are activation functions in between.
+    if network[input_layer_idx].out_features != network[output_layer_idx].in_features:
+        raise ValueError("Input and output layers must have the same number of features. Check that the layers are adjacent.")
+
+    in_l: WidenableLinear = network[input_layer_idx]
+    out_l: WidenableLinear = network[output_layer_idx]
+
+    with torch.no_grad():
+        # --- remove neuron from input layer (outgoing weights & bias) ---
+        # Keep all neurons except the one at neuron_idx
+        mask = torch.ones(in_l.out_features, dtype=torch.bool)
+        mask[neuron_idx] = False
+        
+        new_weight = in_l.weight.data[mask]
+        new_bias = in_l.bias.data[mask]
+        
+        # Update input layer dimensions
+        in_l.out_features = new_weight.shape[0]
+        in_l.weight = nn.Parameter(new_weight)
+        in_l.bias = nn.Parameter(new_bias)
+        
+        # --- remove neuron from output layer (incoming weights) ---
+        # Keep all input features except the one at neuron_idx
+        new_weight = out_l.weight.data[:, mask]
+        
+        # Update output layer dimensions
+        out_l.in_features = new_weight.shape[1]
+        out_l.weight = nn.Parameter(new_weight)
+
 # --------------------------------------------------------------------------- #
 # 4.  Example usage
 # --------------------------------------------------------------------------- #

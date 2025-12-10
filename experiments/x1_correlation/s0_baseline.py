@@ -13,16 +13,18 @@ import torch.nn as nn
 from pathlib import Path
 
 from anet import WidenableLinear, StatsWrapper, Trainer
-from .load_data import get_fashionmnist_loaders
+from anet.data_loaders import get_fashionmnist_loaders
 
 
 if __name__ == "__main__":
     # Configuration
-    HIDDEN_WIDTH = 40           # Width of hidden layer (784 -> HIDDEN_WIDTH -> 10)
+    HIDDEN_WIDTH = 20           # Width of hidden layer (784 -> HIDDEN_WIDTH -> 10)
     BATCH_SIZE = 128
     EPOCHS = 100
     WARMUP_EPOCHS = 10
     LR = 0.001
+    TRAIN_SUBSET_SIZE = None
+    TEST_SUBSET_SIZE = None
     
     # Device configuration
     DEVICE = "cuda" if torch.cuda.is_available() else (
@@ -45,6 +47,8 @@ if __name__ == "__main__":
     train_loader, test_loader = get_fashionmnist_loaders(
         batch_size=BATCH_SIZE,
         device=DEVICE,
+        train_subset_size=TRAIN_SUBSET_SIZE,
+        test_subset_size=TEST_SUBSET_SIZE,
     )
     n_features = train_loader.dataset.tensors[0].shape[1]
     n_classes = train_loader.dataset.tensors[1].max().item() + 1

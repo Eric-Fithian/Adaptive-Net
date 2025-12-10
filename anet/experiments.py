@@ -5,10 +5,12 @@ This module provides high-level experiment functions for studying neuron splitti
 and other adaptive network behaviors.
 """
 
+import random
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from copy import deepcopy
 from tqdm import tqdm
 
@@ -22,7 +24,7 @@ def run_split_correlation_experiment(
     regime_dict: Dict[str, int],
     warmup_epochs: int,
     epochs: int,
-    action_epoch: int,
+    action_epoch_range: Tuple[int, int],
     lr: float,
     device: str | torch.device,
     loss_fn: nn.Module | None = None,
@@ -38,11 +40,12 @@ def run_split_correlation_experiment(
     neuron statistics at split time and the resulting impact on model performance.
     
     For each regime (architecture width) and initialization:
-    1. Pretrain to action_epoch
-    2. Split snapshot into control (no split) and treatment (split neuron)
-    3. Continue training both to full epochs
-    4. Record delta test loss at each horizon
-    5. Capture neuron statistics at split time
+    1. Sample a random action_epoch from action_epoch_range (uniform distribution)
+    2. Pretrain to action_epoch
+    3. Split snapshot into control (no split) and treatment (split neuron)
+    4. Continue training both to full epochs
+    5. Record delta test loss at each horizon
+    6. Capture neuron statistics at split time
     
     Args:
         dataset_name: Name of the dataset (for metadata).
@@ -51,7 +54,8 @@ def run_split_correlation_experiment(
         regime_dict: Dictionary mapping regime names to hidden layer widths.
         warmup_epochs: Number of warmup epochs for learning rate scheduler.
         epochs: Total number of training epochs.
-        action_epoch: Epoch at which to split neuron in treatment group.
+        action_epoch_range: Tuple (min_epoch, max_epoch) for uniform sampling of split epoch.
+            The min_epoch must be >= max(temporal_windows) to ensure buffer is filled.
         lr: Learning rate.
         device: Device to train on ('cuda', 'mps', or 'cpu').
         loss_fn: Loss function to use. If None, infers from target data:
@@ -69,7 +73,7 @@ def run_split_correlation_experiment(
         List of dictionaries containing statistics and performance metrics.
         Each dictionary includes:
         - Neuron statistics at split time (spatial and temporal)
-        - regime_name, starting_width, init_id, neuron_idx
+        - regime_name, starting_width, init_id, neuron_idx, action_epoch
         - delta_test_loss_at_h{i} for each horizon i (epochs after action)
         
     Example:
@@ -83,7 +87,7 @@ def run_split_correlation_experiment(
         ...     regime_dict=regime_dict,
         ...     warmup_epochs=10,
         ...     epochs=100,
-        ...     action_epoch=50,
+        ...     action_epoch_range=(32, 80),  # Random split between epochs 32 and 80
         ...     lr=0.001,
         ...     device="cuda",
         ...     loss_fn=nn.CrossEntropyLoss(),
@@ -99,6 +103,7 @@ def run_split_correlation_experiment(
         ...     train_loader=train_loader,
         ...     test_loader=test_loader,
         ...     regime_dict=regime_dict,
+        ...     action_epoch_range=(20, 60),
         ...     loss_fn=nn.MSELoss(),
         ...     n_outputs=1,
         ...     ...
@@ -107,6 +112,19 @@ def run_split_correlation_experiment(
     # Get input dimension from data
     n_features = train_loader.dataset.tensors[0].shape[1]
     y = train_loader.dataset.tensors[1]
+    
+    # Validate action_epoch_range
+    min_action_epoch, max_action_epoch = action_epoch_range
+    min_required = max(temporal_windows) if temporal_windows else 1
+    if min_action_epoch < min_required:
+        print(f"WARNING: min action_epoch ({min_action_epoch}) < max(temporal_windows) ({min_required}). "
+              f"Temporal statistics may be computed with partial buffer data for early splits.")
+    assert max_action_epoch <= epochs, (
+        f"max action_epoch ({max_action_epoch}) must be <= epochs ({epochs})"
+    )
+    assert min_action_epoch < max_action_epoch, (
+        f"min action_epoch ({min_action_epoch}) must be < max action_epoch ({max_action_epoch})"
+    )
     
     # Infer output dimension if not provided
     if n_outputs is None:
@@ -141,6 +159,8 @@ def run_split_correlation_experiment(
             range(n_different_model_initializations), 
             desc=f"Training {dataset_name}->{regime_name} ({starting_width} hidden units)"
         ):
+            # Sample random action epoch for this initialization (uniform distribution)
+            action_epoch = random.randint(min_action_epoch, max_action_epoch)
             # Create base model architecture
             model = StatsWrapper(
                 nn.Sequential(
@@ -246,6 +266,7 @@ def run_split_correlation_experiment(
                 row['starting_width'] = starting_width
                 row['init_id'] = init_id
                 row['neuron_idx'] = neuron_idx
+                row['action_epoch'] = action_epoch
                 
                 # Calculate delta test loss at each horizon (epochs after action)
                 for h, (control_loss, treat_loss) in enumerate(
