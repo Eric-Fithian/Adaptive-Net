@@ -1,0 +1,827 @@
+==========================================
+SLURM_JOB_ID = 15490563
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mcn64
+==========================================
+
+======================================================================
+ FashionMNIST CORRELATION ANALYSIS
+ Within-Regime Analysis (avoids architecture size confounding)
+======================================================================
+Input: experiments/x1_correlation/output_local/mnist/correlation_experiment_results_FashionMNIST.csv
+CSV output: experiments/x1_correlation/output_local/mnist/analysis
+Graph output: experiments/x1_correlation/output/mnist
+
+======================================================================
+ PART 0: DEFINITIONS & EXPERIMENTAL SETUP
+======================================================================
+
+EXPERIMENTAL SETUP DEFINITIONS
+==============================
+
+1. SAMPLE UNIT
+   Each row = one neuron at one split decision point
+   - A neuron is selected for potential splitting
+   - Its metrics are recorded at the moment of decision
+   - The split is performed and outcomes are measured
+
+2. TARGET VARIABLE: delta_test_loss_at_h{N}
+   delta = (test_loss_after_split at epoch+N) - (test_loss_of_unsplit_baseline at epoch+N)
+   
+   Interpretation:
+   - delta < 0 → Split HELPED (test loss decreased)
+   - delta > 0 → Split HURT (test loss increased)
+   - delta ≈ 0 → No significant effect
+   
+   We want metrics with NEGATIVE correlation (higher metric → lower delta → better outcome)
+
+3. REGIME
+   Network architecture width category:
+   - tiny: 10 hidden neurons
+   - small: 20 hidden neurons
+   - medium: 40 hidden neurons
+   - large: 80 hidden neurons
+   
+   Analysis is done WITHIN each regime to avoid confounding from architecture size.
+
+4. SPEARMAN CORRELATION (ρ)
+   Rank-based correlation measuring monotonic relationship.
+   - ρ = -0.3: Higher metric values predict better outcomes (split helps)
+   - ρ = +0.3: Higher metric values predict worse outcomes (split hurts)
+   - |ρ| > 0.1: Small effect
+   - |ρ| > 0.3: Medium effect  
+   - |ρ| > 0.5: Large effect
+
+5. STATISTICAL TESTING
+   - Benjamini-Hochberg FDR correction applied
+   - q < 0.05 threshold for significance
+   - FDR controls expected proportion of false discoveries among rejected hypotheses
+
+6. NON-IID DATA STRUCTURE
+   Neurons are nested within networks:
+   - Multiple neurons per network
+   - Multiple networks per regime
+   - Correlations within network may exist
+   
+   Report: number of unique networks (init_id) per regime
+
+7. PRIMARY vs EXPLORATORY ANALYSIS
+   PRIMARY (pre-specified): 13 atomic metrics at h=8
+   EXPLORATORY: All temporal metrics, all horizons
+   
+   Primary analysis conclusions are confirmatory.
+   Exploratory analysis generates hypotheses for future testing.
+
+Saved: part0_definitions.txt
+
+======================================================================
+ PART 1: DATA OVERVIEW & NON-IID STRUCTURE
+======================================================================
+
+Total samples (neuron-split observations): 6000
+Regime column: regime_name
+
+--- NON-IID DATA STRUCTURE ---
+Total unique networks (init_id): 20
+Average neurons per network: 300.0
+
+Per-regime breakdown:
+  medium: 2000 samples from 20 networks (100.0 neurons/network)
+  small: 2000 samples from 20 networks (100.0 neurons/network)
+  tiny: 2000 samples from 20 networks (100.0 neurons/network)
+
+--- SAMPLE SIZES ---
+  medium: 2000 samples
+  small: 2000 samples
+  tiny: 2000 samples
+
+--- TARGET VARIABLES ---
+Horizons available: 39
+  Range: h0 to h38
+  Primary horizon (pre-specified): h=8
+
+--- PREDICTOR METRICS ---
+  Atomic metrics: 13
+  Temporal metrics: 2340
+  Total hypothesis tests (all horizons): ~91,767
+
+--- OUTCOME DISTRIBUTION at delta_test_loss_at_h8 ---
+  medium: mean=-0.000013, std=0.000165, 46.9% improved
+  small: mean=-0.000199, std=0.000303, 76.1% improved
+  tiny: mean=-0.000565, std=0.000554, 93.0% improved
+
+Saved: part1_outcome_distributions.png
+
+======================================================================
+ PART 2: ATOMIC METRICS (PRIMARY ANALYSIS)
+ Pre-specified: 13 base metrics at h=8
+======================================================================
+
+*** PRIMARY ANALYSIS: 13 atomic metrics ***
+Pre-specified hypothesis: These metrics predict split outcomes at h=8
+Saved: part2_atomic_correlations.csv
+
+--- PRIMARY RESULTS at h=8 ---
+
+  Regime: medium (n=1600)
+  Significant metrics (q<0.05): 7/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  input_weight_grads_var                -0.102     0.0002 SPLIT HELPS 
+  output_weights_mean                   -0.081     0.0037 SPLIT HELPS 
+  output_weight_grads_mean              +0.075     0.0084 SPLIT HURTS 
+  pre_activation_mean                   +0.093     0.0007 SPLIT HURTS 
+  post_activation_mean                  +0.153     0.0000 SPLIT HURTS 
+  output_weights_var                    +0.218     0.0000 SPLIT HURTS 
+  input_weights_var                     +0.333     0.0000 SPLIT HURTS 
+
+  Regime: small (n=1600)
+  Significant metrics (q<0.05): 8/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  input_weight_grads_var                -0.097     0.0003 SPLIT HELPS 
+  input_weights_mean                    -0.082     0.0027 SPLIT HELPS 
+  output_weights_var                    +0.105     0.0001 SPLIT HURTS 
+  output_weight_grads_var               +0.129     0.0000 SPLIT HURTS 
+  output_weight_grads_mean              +0.142     0.0000 SPLIT HURTS 
+  pre_activation_mean                   +0.271     0.0000 SPLIT HURTS 
+  input_weights_var                     +0.292     0.0000 SPLIT HURTS 
+  post_activation_mean                  +0.304     0.0000 SPLIT HURTS 
+
+  Regime: tiny (n=1600)
+  Significant metrics (q<0.05): 8/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  input_weights_mean                    -0.087     0.0011 SPLIT HELPS 
+  output_weights_mean                   +0.086     0.0014 SPLIT HURTS 
+  bias                                  +0.113     0.0000 SPLIT HURTS 
+  output_weight_grads_mean              +0.133     0.0000 SPLIT HURTS 
+  output_weight_grads_var               +0.193     0.0000 SPLIT HURTS 
+  input_weights_var                     +0.212     0.0000 SPLIT HURTS 
+  post_activation_mean                  +0.357     0.0000 SPLIT HURTS 
+  pre_activation_mean                   +0.367     0.0000 SPLIT HURTS 
+Saved: part2_atomic_heatmap.png
+
+======================================================================
+ PART 3: TEMPORAL METRICS - BASIC AGGREGATIONS
+ (Using: min, max, mean, median, var)
+======================================================================
+
+Found 325 temporal metrics with basic aggregations
+Saved: part3_temporal_basic_correlations.csv
+
+  Correlation strength by temporal window:
+    Window 2: mean |ρ|=0.183, n_sig=3814
+    Window 4: mean |ρ|=0.200, n_sig=3685
+    Window 8: mean |ρ|=0.201, n_sig=4236
+    Window 16: mean |ρ|=0.201, n_sig=4293
+    Window 32: mean |ρ|=0.204, n_sig=4260
+
+  Correlation strength by aggregation method:
+    median: mean |ρ|=0.210, n_sig=3990
+    mean: mean |ρ|=0.209, n_sig=4130
+    max: mean |ρ|=0.207, n_sig=4361
+    min: mean |ρ|=0.203, n_sig=4098
+    var: mean |ρ|=0.158, n_sig=3709
+Saved: part3_window_comparison_basic.png
+
+======================================================================
+ PART 4: TEMPORAL METRICS - ALL AGGREGATIONS (EXPLORATORY)
+ Note: ~2300 metrics × 39 horizons - interpret with caution
+======================================================================
+
+Found 2340 total temporal metrics
+*** EXPLORATORY ANALYSIS - results should be validated ***
+Saved: part4_temporal_full_correlations.csv
+
+  Performance by Aggregation Family:
+  Family          Mean |ρ|     # Sig     
+  -------------------------------------
+  energy          0.217        8473      
+  central         0.210        12015     
+  extremes        0.210        16196     
+  curvature       0.162        5505      
+  spread          0.159        17399     
+  trend           0.142        12745     
+  regime_shift    0.138        3527      
+  spectral        0.116        2423      
+  dynamics        0.115        3410      
+  distribution    0.112        1646      
+  robust          0.105        1759      
+Saved: part4_aggregation_comparison.png
+
+  Top 5 Temporal Metrics per Regime at h=8:
+
+    Regime: medium
+      ρ=+0.333 (q=0.0000): tmp32__q90__input_weights_var
+      ρ=+0.333 (q=0.0000): tmp32__max__input_weights_var
+      ρ=+0.333 (q=0.0000): tmp8__max__input_weights_var
+      ρ=+0.333 (q=0.0000): tmp16__max__input_weights_var
+      ρ=+0.333 (q=0.0000): tmp8__q90__input_weights_var
+
+    Regime: small
+      ρ=-0.326 (q=0.0000): tmp32__mean_second_diff__output_weight_grads_var
+      ρ=+0.308 (q=0.0000): tmp8__min__post_activation_mean
+      ρ=+0.307 (q=0.0000): tmp32__min__post_activation_mean
+      ρ=+0.304 (q=0.0000): tmp2__min__post_activation_mean
+      ρ=+0.304 (q=0.0000): tmp16__min__post_activation_mean
+
+    Regime: tiny
+      ρ=+0.374 (q=0.0000): tmp4__min__pre_activation_mean
+      ρ=+0.374 (q=0.0000): tmp2__min__pre_activation_mean
+      ρ=+0.373 (q=0.0000): tmp8__min__pre_activation_mean
+      ρ=+0.372 (q=0.0000): tmp32__min__pre_activation_mean
+      ρ=+0.371 (q=0.0000): tmp2__q10__pre_activation_mean
+
+======================================================================
+ PART 5: CROSS-REGIME CONSISTENCY ANALYSIS
+======================================================================
+
+Analyzing consistency across 3 regimes
+
+Metrics significant in ALL regimes: 504
+  ...with SAME SIGN (most reliable): 500
+
+  Top same-sign consistent metrics (negative ρ = split helps):
+    ρ=-0.288 (±0.057): tmp32__mean_second_diff__output_weight_grads_...
+    ρ=-0.250 (±0.014): tmp32__abs_mean_second_diff__bias
+    ρ=-0.250 (±0.012): tmp32__abs_mean_second_diff__input_weights_me...
+    ρ=-0.237 (±0.011): tmp16__abs_mean_second_diff__bias
+    ρ=-0.236 (±0.025): tmp32__abs_mean_second_diff__output_weights_m...
+    ρ=-0.231 (±0.010): tmp16__abs_mean_second_diff__input_weights_me...
+    ρ=-0.218 (±0.024): tmp16__abs_mean_second_diff__output_weights_m...
+    ρ=-0.211 (±0.037): tmp32__abs_mean_second_diff__output_weights_v...
+    ρ=-0.209 (±0.023): tmp8__abs_mean_second_diff__output_weights_me...
+    ρ=-0.201 (±0.003): tmp8__abs_mean_second_diff__bias
+Saved: part5_cross_regime_consistent.csv
+Saved: part5_consistency_heatmap.png
+
+======================================================================
+ PART 6: HORIZON TREND ANALYSIS
+======================================================================
+
+  Correlation Summary by Horizon:
+  H     Mean |ρ|   Max |ρ|    # Sig   
+  ---------------------------------
+  0     0.142      0.485      2823    
+  1     0.142      0.343      2392    
+  2     0.132      0.359      2376    
+  3     0.129      0.367      2504    
+  4     0.131      0.368      2728    
+  5     0.139      0.378      2827    
+  6     0.140      0.378      2877    
+  7     0.142      0.377      2902    
+  8     0.144      0.374      2882    
+  9     0.145      0.386      2674    
+  10    0.145      0.384      2671    
+  11    0.145      0.380      2667    
+  12    0.144      0.377      2671    
+  13    0.144      0.374      2683    
+  14    0.153      0.385      2382    
+  15    0.153      0.384      2384    
+  16    0.153      0.382      2375    
+  17    0.153      0.381      2384    
+  18    0.168      0.409      2089    
+  19    0.167      0.407      2097    
+  20    0.167      0.405      2101    
+  21    0.167      0.404      2107    
+  22    0.176      0.411      1999    
+  23    0.177      0.410      1978    
+  24    0.177      0.409      1979    
+  25    0.178      0.408      1966    
+  26    0.206      0.460      1893    
+  27    0.206      0.459      1894    
+  28    0.205      0.458      1896    
+  29    0.205      0.456      1895    
+  30    0.205      0.455      1892    
+  31    0.239      0.485      1706    
+  32    0.239      0.484      1708    
+  33    0.238      0.484      1711    
+  34    0.238      0.484      1711    
+  35    0.310      0.588      1321    
+  36    0.311      0.588      1319    
+  37    0.311      0.588      1317    
+  38    0.311      0.588      1317    
+Saved: part6_horizon_trends.png
+
+======================================================================
+ PART 8: PRACTICAL SIGNIFICANCE ANALYSIS
+======================================================================
+
+--- QUARTILE ANALYSIS: Selecting neurons by metric value ---
+If you split only neurons in the TOP or BOTTOM quartile by metric,
+what's the expected improvement vs random selection?
+
+  Regime: medium
+    Baseline (random): mean delta = -0.000013
+    Select top quartile by tmp8__var__output_weights_mean:
+      ρ = -0.159, n_selected = 500
+      Selected mean delta = -0.000056
+      Improvement over random: 0.000043 (+316.7%)
+    Select bottom quartile by tmp32__max__input_weights_var:
+      ρ = 0.333, n_selected = 500
+      Selected mean delta = -0.000116
+      Improvement over random: 0.000102 (+759.4%)
+
+  Regime: small
+    Baseline (random): mean delta = -0.000199
+    Select top quartile by tmp16__var__post_activation_grad_me...:
+      ρ = -0.202, n_selected = 500
+      Selected mean delta = -0.000298
+      Improvement over random: 0.000099 (+49.9%)
+    Select bottom quartile by tmp8__min__post_activation_mean:
+      ρ = 0.308, n_selected = 500
+      Selected mean delta = -0.000319
+      Improvement over random: 0.000120 (+60.4%)
+
+  Regime: tiny
+    Baseline (random): mean delta = -0.000565
+    Select top quartile by tmp4__var__output_weights_mean:
+      ρ = -0.192, n_selected = 500
+      Selected mean delta = -0.000729
+      Improvement over random: 0.000164 (+29.0%)
+    Select bottom quartile by tmp4__min__pre_activation_mean:
+      ρ = 0.374, n_selected = 500
+      Selected mean delta = -0.000882
+      Improvement over random: 0.000317 (+56.2%)
+
+Saved: part8_quartile_analysis.csv
+
+--- CLASSIFICATION ANALYSIS ---
+If we use metric as classifier: 'split if metric > median'
+Target: delta < 0 (split helped)
+    medium - tmp8__var__output_weights_mean:
+      Base rate (% splits help): 37.5%
+      Precision: 52.2%, Recall: 69.6%, F1: 0.597
+    medium - tmp8__var__bias:
+      Base rate (% splits help): 37.5%
+      Precision: 51.9%, Recall: 69.2%, F1: 0.593
+    medium - tmp16__var__output_weights_mea...:
+      Base rate (% splits help): 37.5%
+      Precision: 52.7%, Recall: 70.3%, F1: 0.602
+    small - tmp16__var__post_activation_gr...:
+      Base rate (% splits help): 60.9%
+      Precision: 67.0%, Recall: 55.0%, F1: 0.604
+    small - tmp32__var__input_weights_mean:
+      Base rate (% splits help): 60.9%
+      Precision: 79.4%, Recall: 65.2%, F1: 0.716
+    small - tmp8__var__post_activation_gra...:
+      Base rate (% splits help): 60.9%
+      Precision: 66.1%, Recall: 54.3%, F1: 0.596
+    tiny - tmp4__var__output_weights_mean:
+      Base rate (% splits help): 74.4%
+      Precision: 93.4%, Recall: 62.8%, F1: 0.751
+    tiny - tmp4__var__input_weights_mean:
+      Base rate (% splits help): 74.4%
+      Precision: 92.9%, Recall: 62.4%, F1: 0.747
+    tiny - tmp4__var__bias:
+      Base rate (% splits help): 74.4%
+      Precision: 93.1%, Recall: 62.6%, F1: 0.748
+
+======================================================================
+ SINGLE-DATASET ANALYSIS COMPLETE
+ CSV results: experiments/x1_correlation/output_local/mnist/analysis
+ Graph results: experiments/x1_correlation/output/mnist
+======================================================================
+
+
+======================================================================
+ CIFAR10 CORRELATION ANALYSIS
+ Within-Regime Analysis (avoids architecture size confounding)
+======================================================================
+Input: experiments/x1_correlation/output_local/cifar-10/correlation_experiment_results_CIFAR10.csv
+CSV output: experiments/x1_correlation/output_local/cifar-10/analysis
+Graph output: experiments/x1_correlation/output/cifar-10
+
+======================================================================
+ PART 0: DEFINITIONS & EXPERIMENTAL SETUP
+======================================================================
+
+EXPERIMENTAL SETUP DEFINITIONS
+==============================
+
+1. SAMPLE UNIT
+   Each row = one neuron at one split decision point
+   - A neuron is selected for potential splitting
+   - Its metrics are recorded at the moment of decision
+   - The split is performed and outcomes are measured
+
+2. TARGET VARIABLE: delta_test_loss_at_h{N}
+   delta = (test_loss_after_split at epoch+N) - (test_loss_of_unsplit_baseline at epoch+N)
+   
+   Interpretation:
+   - delta < 0 → Split HELPED (test loss decreased)
+   - delta > 0 → Split HURT (test loss increased)
+   - delta ≈ 0 → No significant effect
+   
+   We want metrics with NEGATIVE correlation (higher metric → lower delta → better outcome)
+
+3. REGIME
+   Network architecture width category:
+   - tiny: 10 hidden neurons
+   - small: 20 hidden neurons
+   - medium: 40 hidden neurons
+   - large: 80 hidden neurons
+   
+   Analysis is done WITHIN each regime to avoid confounding from architecture size.
+
+4. SPEARMAN CORRELATION (ρ)
+   Rank-based correlation measuring monotonic relationship.
+   - ρ = -0.3: Higher metric values predict better outcomes (split helps)
+   - ρ = +0.3: Higher metric values predict worse outcomes (split hurts)
+   - |ρ| > 0.1: Small effect
+   - |ρ| > 0.3: Medium effect  
+   - |ρ| > 0.5: Large effect
+
+5. STATISTICAL TESTING
+   - Benjamini-Hochberg FDR correction applied
+   - q < 0.05 threshold for significance
+   - FDR controls expected proportion of false discoveries among rejected hypotheses
+
+6. NON-IID DATA STRUCTURE
+   Neurons are nested within networks:
+   - Multiple neurons per network
+   - Multiple networks per regime
+   - Correlations within network may exist
+   
+   Report: number of unique networks (init_id) per regime
+
+7. PRIMARY vs EXPLORATORY ANALYSIS
+   PRIMARY (pre-specified): 13 atomic metrics at h=8
+   EXPLORATORY: All temporal metrics, all horizons
+   
+   Primary analysis conclusions are confirmatory.
+   Exploratory analysis generates hypotheses for future testing.
+
+Saved: part0_definitions.txt
+
+======================================================================
+ PART 1: DATA OVERVIEW & NON-IID STRUCTURE
+======================================================================
+
+Total samples (neuron-split observations): 8000
+Regime column: regime_name
+
+--- NON-IID DATA STRUCTURE ---
+Total unique networks (init_id): 20
+Average neurons per network: 400.0
+
+Per-regime breakdown:
+  large: 2000 samples from 20 networks (100.0 neurons/network)
+  medium: 2000 samples from 20 networks (100.0 neurons/network)
+  small: 2000 samples from 20 networks (100.0 neurons/network)
+  tiny: 2000 samples from 20 networks (100.0 neurons/network)
+
+--- SAMPLE SIZES ---
+  large: 2000 samples
+  medium: 2000 samples
+  small: 2000 samples
+  tiny: 2000 samples
+
+--- TARGET VARIABLES ---
+Horizons available: 39
+  Range: h0 to h38
+  Primary horizon (pre-specified): h=8
+
+--- PREDICTOR METRICS ---
+  Atomic metrics: 13
+  Temporal metrics: 2340
+  Total hypothesis tests (all horizons): ~91,767
+
+--- OUTCOME DISTRIBUTION at delta_test_loss_at_h8 ---
+  large: mean=0.000662, std=0.000357, 4.4% improved
+  medium: mean=-0.000094, std=0.000431, 56.9% improved
+  small: mean=-0.001207, std=0.000849, 95.8% improved
+  tiny: mean=-0.004236, std=0.002167, 98.9% improved
+
+Saved: part1_outcome_distributions.png
+
+======================================================================
+ PART 2: ATOMIC METRICS (PRIMARY ANALYSIS)
+ Pre-specified: 13 base metrics at h=8
+======================================================================
+
+*** PRIMARY ANALYSIS: 13 atomic metrics ***
+Pre-specified hypothesis: These metrics predict split outcomes at h=8
+Saved: part2_atomic_correlations.csv
+
+--- PRIMARY RESULTS at h=8 ---
+
+  Regime: large (n=1600)
+  Significant metrics (q<0.05): 3/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  post_activation_mean                  +0.098     0.0009 SPLIT HURTS 
+  output_weights_var                    +0.102     0.0004 SPLIT HURTS 
+  input_weights_var                     +0.203     0.0000 SPLIT HURTS 
+
+  Regime: medium (n=1600)
+  Significant metrics (q<0.05): 4/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  post_activation_grad_mean             -0.113     0.0001 SPLIT HELPS 
+  input_weight_grads_mean               -0.074     0.0194 SPLIT HELPS 
+  post_activation_mean                  +0.071     0.0257 SPLIT HURTS 
+  input_weights_var                     +0.181     0.0000 SPLIT HURTS 
+
+  Regime: small (n=1600)
+  Significant metrics (q<0.05): 1/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  input_weights_var                     +0.228     0.0000 SPLIT HURTS 
+
+  Regime: tiny (n=1600)
+  Significant metrics (q<0.05): 2/13
+  Metric                                     ρ    q-value Direction   
+  -----------------------------------------------------------------
+  output_weights_var                    +0.102     0.0008 SPLIT HURTS 
+  input_weights_var                     +0.339     0.0000 SPLIT HURTS 
+Saved: part2_atomic_heatmap.png
+
+======================================================================
+ PART 3: TEMPORAL METRICS - BASIC AGGREGATIONS
+ (Using: min, max, mean, median, var)
+======================================================================
+
+Found 325 temporal metrics with basic aggregations
+Saved: part3_temporal_basic_correlations.csv
+
+  Correlation strength by temporal window:
+    Window 2: mean |ρ|=0.137, n_sig=1461
+    Window 4: mean |ρ|=0.137, n_sig=1429
+    Window 8: mean |ρ|=0.137, n_sig=1530
+    Window 16: mean |ρ|=0.131, n_sig=1790
+    Window 32: mean |ρ|=0.134, n_sig=1797
+
+  Correlation strength by aggregation method:
+    min: mean |ρ|=0.144, n_sig=1351
+    mean: mean |ρ|=0.140, n_sig=1494
+    median: mean |ρ|=0.140, n_sig=1520
+    max: mean |ρ|=0.139, n_sig=1481
+    var: mean |ρ|=0.119, n_sig=2161
+Saved: part3_window_comparison_basic.png
+
+======================================================================
+ PART 4: TEMPORAL METRICS - ALL AGGREGATIONS (EXPLORATORY)
+ Note: ~2300 metrics × 39 horizons - interpret with caution
+======================================================================
+
+Found 2340 total temporal metrics
+*** EXPLORATORY ANALYSIS - results should be validated ***
+Saved: part4_temporal_full_correlations.csv
+
+  Performance by Aggregation Family:
+  Family          Mean |ρ|     # Sig     
+  -------------------------------------
+  extremes        0.150        5071      
+  central         0.149        3925      
+  energy          0.140        4359      
+  curvature       0.124        2502      
+  spread          0.122        9083      
+  dynamics        0.110        1234      
+  trend           0.106        3378      
+  regime_shift    0.101        975       
+  spectral        0.097        574       
+  distribution    0.096        260       
+  robust          0.095        342       
+Saved: part4_aggregation_comparison.png
+
+  Top 5 Temporal Metrics per Regime at h=8:
+
+    Regime: large
+      ρ=-0.206 (q=0.0000): tmp32__pct_change_last_first__input_weights_var
+      ρ=+0.203 (q=0.0000): tmp32__max__input_weights_var
+      ρ=+0.203 (q=0.0000): tmp16__max__input_weights_var
+      ρ=+0.203 (q=0.0000): tmp8__max__input_weights_var
+      ρ=+0.203 (q=0.0000): tmp4__max__input_weights_var
+
+    Regime: medium
+      ρ=-0.184 (q=0.0000): tmp32__pct_change_last_first__input_weights_var
+      ρ=+0.181 (q=0.0000): tmp32__min__input_weights_var
+      ρ=+0.181 (q=0.0000): tmp32__q10__input_weights_var
+      ρ=+0.181 (q=0.0000): tmp32__median__input_weights_var
+      ρ=+0.181 (q=0.0000): tmp32__mean__input_weights_var
+
+    Regime: small
+      ρ=+0.228 (q=0.0000): tmp32__q10__input_weights_var
+      ρ=+0.228 (q=0.0000): tmp32__min__input_weights_var
+      ρ=+0.228 (q=0.0000): tmp32__l1norm__input_weights_var
+      ρ=+0.228 (q=0.0000): tmp32__mean__input_weights_var
+      ρ=+0.228 (q=0.0000): tmp32__l2norm__input_weights_var
+
+    Regime: tiny
+      ρ=+0.339 (q=0.0000): tmp32__min__input_weights_var
+      ρ=+0.339 (q=0.0000): tmp32__q10__input_weights_var
+      ρ=+0.339 (q=0.0000): tmp16__min__input_weights_var
+      ρ=+0.339 (q=0.0000): tmp16__q10__input_weights_var
+      ρ=+0.339 (q=0.0000): tmp32__l2norm__input_weights_var
+
+======================================================================
+ PART 5: CROSS-REGIME CONSISTENCY ANALYSIS
+======================================================================
+
+Analyzing consistency across 4 regimes
+
+Metrics significant in ALL regimes: 75
+  ...with SAME SIGN (most reliable): 75
+
+  Top same-sign consistent metrics (negative ρ = split helps):
+    ρ=-0.207 (±0.019): tmp32__pct_change_last_first__input_weights_v...
+    ρ=-0.181 (±0.025): tmp16__pct_change_last_first__input_weights_v...
+    ρ=-0.181 (±0.076): tmp32__abs_mean_second_diff__input_weights_me...
+    ρ=-0.175 (±0.075): tmp32__abs_mean_second_diff__bias
+    ρ=-0.156 (±0.073): tmp32__abs_mean_second_diff__output_weights_m...
+    ρ=-0.153 (±0.017): tmp8__pct_change_last_first__input_weights_va...
+    ρ=-0.148 (±0.064): tmp16__abs_mean_second_diff__output_weights_m...
+    ρ=-0.143 (±0.035): tmp32__delta_last_first__input_weights_var
+    ρ=-0.138 (±0.034): tmp32__slope_ols__input_weights_var
+    ρ=-0.135 (±0.033): tmp32__half_diff_mean__input_weights_var
+Saved: part5_cross_regime_consistent.csv
+Saved: part5_consistency_heatmap.png
+
+======================================================================
+ PART 6: HORIZON TREND ANALYSIS
+======================================================================
+
+  Correlation Summary by Horizon:
+  H     Mean |ρ|   Max |ρ|    # Sig   
+  ---------------------------------
+  0     0.151      0.492      2207    
+  1     0.106      0.262      1842    
+  2     0.104      0.233      1673    
+  3     0.112      0.252      1511    
+  4     0.118      0.291      1550    
+  5     0.118      0.270      1241    
+  6     0.121      0.295      1290    
+  7     0.126      0.318      1291    
+  8     0.128      0.339      1329    
+  9     0.127      0.308      1230    
+  10    0.129      0.303      1234    
+  11    0.132      0.317      1219    
+  12    0.134      0.330      1231    
+  13    0.136      0.341      1233    
+  14    0.137      0.309      1018    
+  15    0.138      0.308      1022    
+  16    0.135      0.307      1100    
+  17    0.136      0.307      1109    
+  18    0.136      0.285      802     
+  19    0.136      0.284      800     
+  20    0.137      0.283      795     
+  21    0.138      0.282      789     
+  22    0.128      0.250      633     
+  23    0.128      0.249      636     
+  24    0.128      0.249      638     
+  25    0.129      0.249      630     
+  26    0.129      0.235      190     
+  27    0.126      0.235      231     
+  28    0.126      0.236      232     
+  29    0.126      0.237      231     
+  30    0.127      0.238      224     
+  31    0.155      0.236      98      
+  32    0.155      0.236      98      
+  33    0.155      0.237      98      
+  34    0.156      0.237      98      
+  35    0.251      0.353      37      
+  36    0.251      0.353      37      
+  37    0.250      0.353      38      
+  38    0.250      0.353      38      
+Saved: part6_horizon_trends.png
+
+======================================================================
+ PART 8: PRACTICAL SIGNIFICANCE ANALYSIS
+======================================================================
+
+--- QUARTILE ANALYSIS: Selecting neurons by metric value ---
+If you split only neurons in the TOP or BOTTOM quartile by metric,
+what's the expected improvement vs random selection?
+
+  Regime: large
+    Baseline (random): mean delta = 0.000662
+    Select top quartile by tmp32__min__pre_activation_mean:
+      ρ = -0.055, n_selected = 500
+      Selected mean delta = 0.000646
+      Improvement over random: 0.000015 (+2.3%)
+    Select bottom quartile by tmp32__max__input_weights_var:
+      ρ = 0.203, n_selected = 500
+      Selected mean delta = 0.000448
+      Improvement over random: 0.000213 (+32.2%)
+
+  Regime: medium
+    Baseline (random): mean delta = -0.000094
+    Select top quartile by post_activation_grad_mean:
+      ρ = -0.113, n_selected = 500
+      Selected mean delta = -0.000171
+      Improvement over random: 0.000077 (+81.9%)
+    Select bottom quartile by tmp32__min__input_weights_var:
+      ρ = 0.181, n_selected = 500
+      Selected mean delta = -0.000263
+      Improvement over random: 0.000169 (+179.8%)
+
+  Regime: small
+    Baseline (random): mean delta = -0.001207
+    Select top quartile by tmp16__var__output_weights_var:
+      ρ = -0.169, n_selected = 500
+      Selected mean delta = -0.001434
+      Improvement over random: 0.000226 (+18.7%)
+    Select bottom quartile by tmp32__min__input_weights_var:
+      ρ = 0.228, n_selected = 500
+      Selected mean delta = -0.001530
+      Improvement over random: 0.000322 (+26.7%)
+
+  Regime: tiny
+    Baseline (random): mean delta = -0.004236
+    Select top quartile by tmp32__var__output_weights_mean:
+      ρ = -0.259, n_selected = 500
+      Selected mean delta = -0.005090
+      Improvement over random: 0.000854 (+20.2%)
+    Select bottom quartile by tmp32__min__input_weights_var:
+      ρ = 0.339, n_selected = 500
+      Selected mean delta = -0.005267
+      Improvement over random: 0.001032 (+24.4%)
+
+Saved: part8_quartile_analysis.csv
+
+--- CLASSIFICATION ANALYSIS ---
+If we use metric as classifier: 'split if metric > median'
+Target: delta < 0 (split helped)
+    large - tmp32__min__pre_activation_mea...:
+      Base rate (% splits help): 3.5%
+      Precision: 3.8%, Recall: 53.5%, F1: 0.071
+    large - tmp8__var__output_weights_mean:
+      Base rate (% splits help): 3.5%
+      Precision: 6.2%, Recall: 87.3%, F1: 0.116
+    large - input_weight_grads_var:
+      Base rate (% splits help): 3.5%
+      Precision: 4.9%, Recall: 69.0%, F1: 0.092
+    medium - post_activation_grad_mean:
+      Base rate (% splits help): 45.5%
+      Precision: 48.2%, Recall: 53.0%, F1: 0.505
+    medium - tmp32__var__input_weights_var:
+      Base rate (% splits help): 45.5%
+      Precision: 60.2%, Recall: 66.2%, F1: 0.630
+    medium - tmp32__var__output_weights_var:
+      Base rate (% splits help): 45.5%
+      Precision: 60.8%, Recall: 66.8%, F1: 0.637
+    small - tmp16__var__output_weights_var:
+      Base rate (% splits help): 76.6%
+      Precision: 96.4%, Recall: 62.9%, F1: 0.761
+    small - tmp32__var__output_weights_var:
+      Base rate (% splits help): 76.6%
+      Precision: 96.7%, Recall: 63.1%, F1: 0.764
+    small - tmp16__var__input_weights_var:
+      Base rate (% splits help): 76.6%
+      Precision: 96.0%, Recall: 62.7%, F1: 0.758
+    tiny - tmp32__var__output_weights_mea...:
+      Base rate (% splits help): 79.1%
+      Precision: 99.0%, Recall: 62.6%, F1: 0.767
+    tiny - tmp16__var__output_weights_mea...:
+      Base rate (% splits help): 79.1%
+      Precision: 98.9%, Recall: 62.5%, F1: 0.766
+    tiny - tmp32__var__output_weights_var:
+      Base rate (% splits help): 79.1%
+      Precision: 98.8%, Recall: 62.5%, F1: 0.765
+
+======================================================================
+ SINGLE-DATASET ANALYSIS COMPLETE
+ CSV results: experiments/x1_correlation/output_local/cifar-10/analysis
+ Graph results: experiments/x1_correlation/output/cifar-10
+======================================================================
+
+
+======================================================================
+ PART 7: CROSS-DATASET TRANSFER VALIDATION
+ FashionMNIST vs CIFAR10
+======================================================================
+
+Overlapping metrics analyzed: 338
+
+CORRELATION OF CORRELATIONS:
+  Spearman ρ = 0.718 (p = 7.29e-55)
+  → STRONG positive transfer: metrics predictive on FashionMNIST also predictive on CIFAR10
+
+METRICS SIGNIFICANT ON BOTH DATASETS:
+  Total: 149
+  With same sign (TRANSFERABLE): 139
+
+  Top transferable metrics (negative ρ = split helps on both):
+    FashionMNIST: -0.172, CIFAR10: -0.164 → tmp8__var__output_weights_mean
+    FashionMNIST: -0.130, CIFAR10: -0.204 → tmp32__var__output_weights_mean
+    FashionMNIST: -0.167, CIFAR10: -0.161 → tmp8__var__bias
+    FashionMNIST: -0.149, CIFAR10: -0.178 → tmp16__var__bias
+    FashionMNIST: -0.160, CIFAR10: -0.159 → tmp4__var__output_weights_mean
+    FashionMNIST: -0.165, CIFAR10: -0.153 → tmp32__var__input_weights_mean
+    FashionMNIST: -0.157, CIFAR10: -0.143 → tmp4__var__bias
+    FashionMNIST: -0.134, CIFAR10: -0.164 → tmp32__var__output_weights_var
+    FashionMNIST: -0.161, CIFAR10: -0.136 → tmp8__var__input_weights_mean
+    FashionMNIST: -0.156, CIFAR10: -0.136 → tmp32__var__bias
+
+Saved: part7_transferable_metrics.csv
+Saved: part7_transfer_scatter.png
+Saved: part7_cross_dataset_comparison.csv
+
+======================================================================
+ ALL ANALYSES COMPLETE
+ CSV outputs (large, not committed): experiments/x1_correlation/output_local/
+ Graph outputs (committed): experiments/x1_correlation/output/
+======================================================================
+

@@ -1,0 +1,56 @@
+
+EXPERIMENTAL SETUP DEFINITIONS
+==============================
+
+1. SAMPLE UNIT
+   Each row = one neuron at one split decision point
+   - A neuron is selected for potential splitting
+   - Its metrics are recorded at the moment of decision
+   - The split is performed and outcomes are measured
+
+2. TARGET VARIABLE: delta_test_loss_at_h{N}
+   delta = (test_loss_after_split at epoch+N) - (test_loss_of_unsplit_baseline at epoch+N)
+   
+   Interpretation:
+   - delta < 0 → Split HELPED (test loss decreased)
+   - delta > 0 → Split HURT (test loss increased)
+   - delta ≈ 0 → No significant effect
+   
+   We want metrics with NEGATIVE correlation (higher metric → lower delta → better outcome)
+
+3. REGIME
+   Network architecture width category:
+   - tiny: 10 hidden neurons
+   - small: 20 hidden neurons
+   - medium: 40 hidden neurons
+   - large: 80 hidden neurons
+   
+   Analysis is done WITHIN each regime to avoid confounding from architecture size.
+
+4. SPEARMAN CORRELATION (ρ)
+   Rank-based correlation measuring monotonic relationship.
+   - ρ = -0.3: Higher metric values predict better outcomes (split helps)
+   - ρ = +0.3: Higher metric values predict worse outcomes (split hurts)
+   - |ρ| > 0.1: Small effect
+   - |ρ| > 0.3: Medium effect  
+   - |ρ| > 0.5: Large effect
+
+5. STATISTICAL TESTING
+   - Benjamini-Hochberg FDR correction applied
+   - q < 0.05 threshold for significance
+   - FDR controls expected proportion of false discoveries among rejected hypotheses
+
+6. NON-IID DATA STRUCTURE
+   Neurons are nested within networks:
+   - Multiple neurons per network
+   - Multiple networks per regime
+   - Correlations within network may exist
+   
+   Report: number of unique networks (init_id) per regime
+
+7. PRIMARY vs EXPLORATORY ANALYSIS
+   PRIMARY (pre-specified): 13 atomic metrics at h=8
+   EXPLORATORY: All temporal metrics, all horizons
+   
+   Primary analysis conclusions are confirmatory.
+   Exploratory analysis generates hypotheses for future testing.

@@ -2,12 +2,13 @@
 
 #SBATCH --account=booth-caai
 #SBATCH --partition=gpu_h100
+#SBATCH --time=48:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
 #SBATCH --job-name="fashionmnist_correlation"
-#SBATCH --output=output_local/x1_s1_%j.log
-#SBATCH --error=output_local/x1_s1_%j.err
+#SBATCH --output=experiments/x1_correlation/log/x1_s1_1_%j.log
+#SBATCH --error=experiments/x1_correlation/log/x1_s1_1_%j.err
 
 #---------------------------------------------------------------------------------
 # Commands to execute

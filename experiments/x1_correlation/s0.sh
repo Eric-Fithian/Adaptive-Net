@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
 #SBATCH --job-name="fashionmnist_correlation"
-#SBATCH --output=output_local/x1_s0_%j.log
-#SBATCH --error=output_local/x1_s0_%j.err
+#SBATCH --output=experiments/x1_correlation/log/x1_s0_%j.log
+#SBATCH --error=experiments/x1_correlation/log/x1_s0_%j.err
 
 #---------------------------------------------------------------------------------
 # Commands to execute

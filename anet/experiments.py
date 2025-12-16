@@ -5,8 +5,7 @@ This module provides high-level experiment functions for studying neuron splitti
 and other adaptive network behaviors.
 """
 
-import random
-
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -25,27 +24,33 @@ def run_split_correlation_experiment(
     warmup_epochs: int,
     epochs: int,
     action_epoch_range: Tuple[int, int],
+    n_action_epoch_slices: int,
+    n_inits_per_slice: int,
     lr: float,
     device: str | torch.device,
     loss_fn: nn.Module | None = None,
     n_outputs: int | None = None,
-    n_different_model_initializations: int = 50,
     n_neurons_per_init: int = 4,
     temporal_windows: List[int] = [2, 4, 8, 16, 32, 64, 128],
 ) -> List[Dict]:
     """
-    Run correlation experiment for neuron splitting.
+    Run correlation experiment for neuron splitting with stratified action epochs.
     
     This function implements a controlled experiment to study the correlation between
     neuron statistics at split time and the resulting impact on model performance.
     
-    For each regime (architecture width) and initialization:
-    1. Sample a random action_epoch from action_epoch_range (uniform distribution)
-    2. Pretrain to action_epoch
-    3. Split snapshot into control (no split) and treatment (split neuron)
-    4. Continue training both to full epochs
-    5. Record delta test loss at each horizon
-    6. Capture neuron statistics at split time
+    The action epochs are deterministically stratified: evenly spaced across the
+    specified range. For example:
+    - Range (1, 3) with 3 slices → epochs [1, 2, 3]
+    - Range (1, 9) with 3 slices → epochs [1, 5, 9]
+    
+    For each regime (architecture width) and action_epoch slice:
+    1. For each initialization in the slice:
+        a. Pretrain to action_epoch
+        b. Split snapshot into control (no split) and treatment (split neuron)
+        c. Continue training both to full epochs
+        d. Record delta test loss at each horizon
+        e. Capture neuron statistics at split time
     
     Args:
         dataset_name: Name of the dataset (for metadata).
@@ -54,8 +59,9 @@ def run_split_correlation_experiment(
         regime_dict: Dictionary mapping regime names to hidden layer widths.
         warmup_epochs: Number of warmup epochs for learning rate scheduler.
         epochs: Total number of training epochs.
-        action_epoch_range: Tuple (min_epoch, max_epoch) for uniform sampling of split epoch.
-            The min_epoch must be >= max(temporal_windows) to ensure buffer is filled.
+        action_epoch_range: Tuple (min_epoch, max_epoch) inclusive range for split epochs.
+        n_action_epoch_slices: Number of evenly spaced epochs to sample from the range.
+        n_inits_per_slice: Number of model initializations per action epoch slice.
         lr: Learning rate.
         device: Device to train on ('cuda', 'mps', or 'cpu').
         loss_fn: Loss function to use. If None, infers from target data:
@@ -65,7 +71,6 @@ def run_split_correlation_experiment(
         n_outputs: Number of output units. If None, infers from target data:
             - Classification: number of unique classes
             - Regression: output dimension (1 for scalar targets)
-        n_different_model_initializations: Number of random initializations per regime.
         n_neurons_per_init: Number of neurons to split per initialization.
         temporal_windows: List of temporal window sizes for statistics.
         
@@ -87,26 +92,15 @@ def run_split_correlation_experiment(
         ...     regime_dict=regime_dict,
         ...     warmup_epochs=10,
         ...     epochs=100,
-        ...     action_epoch_range=(32, 80),  # Random split between epochs 32 and 80
+        ...     action_epoch_range=(10, 90),  # Split epochs from 10 to 90
+        ...     n_action_epoch_slices=5,       # 5 evenly spaced: [10, 30, 50, 70, 90]
+        ...     n_inits_per_slice=4,           # 4 model inits per slice
         ...     lr=0.001,
         ...     device="cuda",
         ...     loss_fn=nn.CrossEntropyLoss(),
         ...     n_outputs=10,
-        ...     n_different_model_initializations=20,
         ...     n_neurons_per_init=5,
         ...     temporal_windows=[2, 4, 8, 16, 32],
-        ... )
-        >>> 
-        >>> # Regression example
-        >>> results = run_split_correlation_experiment(
-        ...     dataset_name="housing_prices",
-        ...     train_loader=train_loader,
-        ...     test_loader=test_loader,
-        ...     regime_dict=regime_dict,
-        ...     action_epoch_range=(20, 60),
-        ...     loss_fn=nn.MSELoss(),
-        ...     n_outputs=1,
-        ...     ...
         ... )
     """
     # Get input dimension from data
@@ -122,9 +116,26 @@ def run_split_correlation_experiment(
     assert max_action_epoch <= epochs, (
         f"max action_epoch ({max_action_epoch}) must be <= epochs ({epochs})"
     )
-    assert min_action_epoch < max_action_epoch, (
-        f"min action_epoch ({min_action_epoch}) must be < max action_epoch ({max_action_epoch})"
+    assert n_action_epoch_slices >= 1, (
+        f"n_action_epoch_slices ({n_action_epoch_slices}) must be >= 1"
     )
+    if n_action_epoch_slices > 1:
+        assert min_action_epoch < max_action_epoch, (
+            f"min action_epoch ({min_action_epoch}) must be < max action_epoch ({max_action_epoch}) "
+            f"when n_action_epoch_slices > 1"
+        )
+    
+    # Compute deterministic action epochs (evenly spaced, inclusive on both ends)
+    if n_action_epoch_slices == 1:
+        action_epochs = [min_action_epoch]
+    else:
+        action_epochs = np.linspace(min_action_epoch, max_action_epoch, n_action_epoch_slices)
+        action_epochs = [int(round(e)) for e in action_epochs]
+    
+    print(f"Stratified action epochs: {action_epochs}")
+    total_inits = len(regime_dict) * len(action_epochs) * n_inits_per_slice
+    print(f"Total model initializations: {total_inits} "
+          f"({len(regime_dict)} regimes × {len(action_epochs)} slices × {n_inits_per_slice} inits/slice)")
     
     # Infer output dimension if not provided
     if n_outputs is None:
@@ -155,69 +166,24 @@ def run_split_correlation_experiment(
     
     # Iterate over each regime (architecture width)
     for regime_name, starting_width in regime_dict.items():
-        for init_id in tqdm(
-            range(n_different_model_initializations), 
-            desc=f"Training {dataset_name}->{regime_name} ({starting_width} hidden units)"
-        ):
-            # Sample random action epoch for this initialization (uniform distribution)
-            action_epoch = random.randint(min_action_epoch, max_action_epoch)
-            # Create base model architecture
-            model = StatsWrapper(
-                nn.Sequential(
-                    WidenableLinear(n_features, starting_width),
-                    nn.GELU(),
-                    WidenableLinear(starting_width, n_outputs)
-                ),
-                buffer_size=max(temporal_windows) if temporal_windows else None,
-            )
-            
-            # Phase 1: Pretrain to action_epoch (deterministic)
-            trainer_pre = Trainer(
-                model=deepcopy(model),
-                loss_fn=loss_fn,
-                device=device,
-                lr=lr,
-                epochs=epochs,
-                warmup_epochs=warmup_epochs,
-                use_cosine=True,
-            )
-            
-            pre_result = trainer_pre.fit(
-                train_loader=train_loader,
-                test_loader=test_loader,
-                start_epoch=0,
-                end_epoch=action_epoch,
-                deterministic=True,
-            )
-            pre_state = trainer_pre.snapshot()
-            
-            # Phase 2: Control group - continue without split
-            trainer_control = Trainer(
-                model=deepcopy(model),
-                loss_fn=loss_fn,
-                device=device,
-                lr=lr,
-                epochs=epochs,
-                warmup_epochs=warmup_epochs,
-                use_cosine=True,
-            )
-            trainer_control.load_snapshot(pre_state)
-            control_post_result = trainer_control.fit(
-                train_loader=train_loader,
-                test_loader=test_loader,
-                start_epoch=action_epoch,
-                end_epoch=epochs,
-                deterministic=True,
-            )
-            control_test_losses_at_horizons = control_post_result['test_losses_epoch']
-            
-            # Phase 3: Treatment group - split neuron and continue
-            raw_feature_rows: List[Dict] = []
-            for neuron_id in range(n_neurons_per_init):
-                neuron_idx = neuron_id % starting_width
+        # Iterate over each stratified action epoch
+        for action_epoch in action_epochs:
+            for init_id in tqdm(
+                range(n_inits_per_slice), 
+                desc=f"{dataset_name}->{regime_name} (w={starting_width}, split@{action_epoch})"
+            ):
+                # Create base model architecture
+                model = StatsWrapper(
+                    nn.Sequential(
+                        WidenableLinear(n_features, starting_width),
+                        nn.GELU(),
+                        WidenableLinear(starting_width, n_outputs)
+                    ),
+                    buffer_size=max(temporal_windows) if temporal_windows else None,
+                )
                 
-                # Create treatment trainer from pre-action snapshot
-                trainer_treat = Trainer(
+                # Phase 1: Pretrain to action_epoch (deterministic)
+                trainer_pre = Trainer(
                     model=deepcopy(model),
                     loss_fn=loss_fn,
                     device=device,
@@ -226,57 +192,102 @@ def run_split_correlation_experiment(
                     warmup_epochs=warmup_epochs,
                     use_cosine=True,
                 )
-                trainer_treat.load_snapshot(pre_state)
                 
-                # Capture neuron statistics at action time
-                wrapper: StatsWrapper = trainer_treat.model
-                stats = wrapper.get_neuron_stats(0, 2, neuron_idx)
-                for temporal_window in temporal_windows:
-                    stats_temporal = wrapper.get_neuron_stats_temporal(0, 2, neuron_idx, temporal_window)
-                    stats = {**stats, **stats_temporal}
-                
-                # Split the neuron
-                split_neuron(
-                    network=wrapper,
-                    input_layer_idx=0,
-                    output_layer_idx=2,
-                    neuron_idx=neuron_idx,
-                    input_splitter=ExactCopy(),
-                    output_splitter=OrthogonalDecomp(),
+                pre_result = trainer_pre.fit(
+                    train_loader=train_loader,
+                    test_loader=test_loader,
+                    start_epoch=0,
+                    end_epoch=action_epoch,
+                    deterministic=True,
                 )
+                pre_state = trainer_pre.snapshot()
                 
-                # Add new parameters to optimizer
-                existing = {id(p) for g in trainer_treat.optimizer.param_groups for p in g['params']}
-                new_params = [p for p in wrapper.parameters() if id(p) not in existing]
-                trainer_treat.add_new_params_follow_scheduler(new_params)
-                
-                # Continue training from action_epoch to end
-                treat_result = trainer_treat.fit(
+                # Phase 2: Control group - continue without split
+                trainer_control = Trainer(
+                    model=deepcopy(model),
+                    loss_fn=loss_fn,
+                    device=device,
+                    lr=lr,
+                    epochs=epochs,
+                    warmup_epochs=warmup_epochs,
+                    use_cosine=True,
+                )
+                trainer_control.load_snapshot(pre_state)
+                control_post_result = trainer_control.fit(
                     train_loader=train_loader,
                     test_loader=test_loader,
                     start_epoch=action_epoch,
                     end_epoch=epochs,
                     deterministic=True,
                 )
-                treat_test_losses_at_horizons = treat_result['test_losses_epoch']
+                control_test_losses_at_horizons = control_post_result['test_losses_epoch']
                 
-                # Record statistics and performance deltas
-                row = stats.copy()
-                row['regime_name'] = regime_name
-                row['starting_width'] = starting_width
-                row['init_id'] = init_id
-                row['neuron_idx'] = neuron_idx
-                row['action_epoch'] = action_epoch
+                # Phase 3: Treatment group - split neuron and continue
+                raw_feature_rows: List[Dict] = []
+                for neuron_id in range(n_neurons_per_init):
+                    neuron_idx = neuron_id % starting_width
+                    
+                    # Create treatment trainer from pre-action snapshot
+                    trainer_treat = Trainer(
+                        model=deepcopy(model),
+                        loss_fn=loss_fn,
+                        device=device,
+                        lr=lr,
+                        epochs=epochs,
+                        warmup_epochs=warmup_epochs,
+                        use_cosine=True,
+                    )
+                    trainer_treat.load_snapshot(pre_state)
+                    
+                    # Capture neuron statistics at action time
+                    wrapper: StatsWrapper = trainer_treat.model
+                    stats = wrapper.get_neuron_stats(0, 2, neuron_idx)
+                    for temporal_window in temporal_windows:
+                        stats_temporal = wrapper.get_neuron_stats_temporal(0, 2, neuron_idx, temporal_window)
+                        stats = {**stats, **stats_temporal}
+                    
+                    # Split the neuron
+                    split_neuron(
+                        network=wrapper,
+                        input_layer_idx=0,
+                        output_layer_idx=2,
+                        neuron_idx=neuron_idx,
+                        input_splitter=ExactCopy(),
+                        output_splitter=OrthogonalDecomp(),
+                    )
+                    
+                    # Add new parameters to optimizer
+                    existing = {id(p) for g in trainer_treat.optimizer.param_groups for p in g['params']}
+                    new_params = [p for p in wrapper.parameters() if id(p) not in existing]
+                    trainer_treat.add_new_params_follow_scheduler(new_params)
+                    
+                    # Continue training from action_epoch to end
+                    treat_result = trainer_treat.fit(
+                        train_loader=train_loader,
+                        test_loader=test_loader,
+                        start_epoch=action_epoch,
+                        end_epoch=epochs,
+                        deterministic=True,
+                    )
+                    treat_test_losses_at_horizons = treat_result['test_losses_epoch']
+                    
+                    # Record statistics and performance deltas
+                    row = stats.copy()
+                    row['regime_name'] = regime_name
+                    row['starting_width'] = starting_width
+                    row['init_id'] = init_id
+                    row['neuron_idx'] = neuron_idx
+                    row['action_epoch'] = action_epoch
+                    
+                    # Calculate delta test loss at each horizon (epochs after action)
+                    for h, (control_loss, treat_loss) in enumerate(
+                        zip(control_test_losses_at_horizons, treat_test_losses_at_horizons)
+                    ):
+                        row[f'delta_test_loss_at_h{h}'] = treat_loss - control_loss
+                    
+                    raw_feature_rows.append(row)
                 
-                # Calculate delta test loss at each horizon (epochs after action)
-                for h, (control_loss, treat_loss) in enumerate(
-                    zip(control_test_losses_at_horizons, treat_test_losses_at_horizons)
-                ):
-                    row[f'delta_test_loss_at_h{h}'] = treat_loss - control_loss
-                
-                raw_feature_rows.append(row)
-            
-            all_stats.extend(raw_feature_rows)
+                all_stats.extend(raw_feature_rows)
     
     return all_stats
 
