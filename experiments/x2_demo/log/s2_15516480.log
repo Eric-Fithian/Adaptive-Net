@@ -1,0 +1,26 @@
+==========================================
+SLURM_JOB_ID = 15516480
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu03
+==========================================
+Loading data from experiments/x2_demo/output/mnist/training_metrics.csv...
+Data shape: (400, 511)
+Class balance: {1: 0.725, 0: 0.275}
+Number of features: 481
+Training Logistic Regression model...
+
+Test Accuracy: 0.5625
+Test ROC AUC: 0.4569
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.27      0.30      0.29        23
+           1       0.70      0.67      0.68        57
+
+    accuracy                           0.56        80
+   macro avg       0.49      0.49      0.49        80
+weighted avg       0.58      0.56      0.57        80
+
+
+Model saved to experiments/x2_demo/output/mnist/lr_model.joblib

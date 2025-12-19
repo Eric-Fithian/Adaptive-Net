@@ -120,7 +120,7 @@ def run_variation(
                 end_epoch=epochs,
                 deterministic=True,
             )
-            final_test_loss = res["test_loss"]
+            final_test_loss = res["test_losses_epoch"][-1]
 
         elif variation_type in ["random", "greedy"]:
             wrapper: StatsWrapper = trainer.model
@@ -188,7 +188,7 @@ def run_variation(
                 end_epoch=epochs,
                 deterministic=True,
             )
-            final_test_loss = res["test_loss"]
+            final_test_loss = res["test_losses_epoch"][-1]
 
         results.append(
             {

@@ -1,0 +1,24 @@
+==========================================
+SLURM_JOB_ID = 15516190
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu03
+==========================================
+Device available: cuda
+
+============================================================
+MNIST Dataset Creation Experiment (Part 1)
+============================================================
+Dataset: MNIST
+Regimes: {'demo': 10}
+Action epoch range: (25, 25)
+Inits: 40
+============================================================
+
+Loading MNIST dataset...
+Starting training...
+Stratified action epochs: [25]
+Total model initializations: 40 (1 regimes × 1 slices × 40 inits/slice)
+
+Processing results...
+
+Results saved to: experiments/x2_demo/output/mnist/training_metrics.csv

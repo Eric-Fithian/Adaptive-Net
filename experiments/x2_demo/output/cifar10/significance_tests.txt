@@ -1,0 +1,18 @@
+Significance Tests (T-test)
+===========================
+
+baseline vs random:
+  t-statistic: 5.9269
+  p-value: 4.6181e-08
+  Significant (p < 0.05): True
+
+baseline vs greedy:
+  t-statistic: 5.7789
+  p-value: 8.9536e-08
+  Significant (p < 0.05): True
+
+random vs greedy:
+  t-statistic: -0.2092
+  p-value: 8.3473e-01
+  Significant (p < 0.05): False
+
