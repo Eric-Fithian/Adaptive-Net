@@ -60,7 +60,7 @@ def run_variation(
     results = []
 
     epochs = 50
-    split_interval = 4
+    split_interval = 3
     start_split_epoch = 11
     # Create list of split epochs: 11, 15, 19, ... < 50
     split_epochs = list(range(start_split_epoch, epochs, split_interval))
@@ -243,6 +243,7 @@ def run_variation(
 
 
 if __name__ == "__main__":
+    number_of_inits = 20
     experiment_dir = Path("experiments/x2_demo")
     model_path = experiment_dir / "output" / "mnist" / "lr_model.joblib"
     results_dir = experiment_dir / "output" / "cifar10"
@@ -284,24 +285,24 @@ if __name__ == "__main__":
     all_results = []
 
     # 1. Baseline
-    res_baseline = run_variation("baseline", 50, train_loader, test_loader, DEVICE)
+    res_baseline = run_variation("baseline", number_of_inits, train_loader, test_loader, DEVICE)
     all_results.extend(res_baseline)
 
     # 2. Random
-    res_random = run_variation("random", 50, train_loader, test_loader, DEVICE)
+    res_random = run_variation("random", number_of_inits, train_loader, test_loader, DEVICE)
     all_results.extend(res_random)
 
     if lr_model is not None:
         # 3. Greedy
         res_greedy = run_variation(
-            "greedy", 50, train_loader, test_loader, DEVICE, lr_model, feature_columns
+            "greedy", number_of_inits, train_loader, test_loader, DEVICE, lr_model, feature_columns
         )
         all_results.extend(res_greedy)
 
         # 4. Anti-Greedy
         res_anti = run_variation(
             "anti-greedy",
-            50,
+            number_of_inits,
             train_loader,
             test_loader,
             DEVICE,

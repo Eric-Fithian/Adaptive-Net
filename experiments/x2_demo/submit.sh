@@ -20,8 +20,8 @@ source /project/caai_amzn_cmpr/efithian/Adaptive-Net/.venv/bin/activate
 cd /project/caai_amzn_cmpr/efithian/Adaptive-Net
 
 # run the training script
-python -m experiments.x2_demo.s1_dataset_creation
-python -m experiments.x2_demo.s2_train_lr
+# python -m experiments.x2_demo.s1_dataset_creation
+# python -m experiments.x2_demo.s2_train_lr
 python -m experiments.x2_demo.s3_cifar_comparison
 python -m experiments.x2_demo.s4_analysis
 

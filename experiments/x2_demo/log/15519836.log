@@ -1,0 +1,33 @@
+==========================================
+SLURM_JOB_ID = 15519836
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu03
+==========================================
+Device available: cuda
+Loading LR model from experiments/x2_demo/output/mnist/lr_model.joblib...
+Loading CIFAR-10 dataset...
+
+Running variation: baseline
+Split epochs: [11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47]
+
+Running variation: random
+Split epochs: [11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47]
+
+Running variation: greedy
+Split epochs: [11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47]
+
+Running variation: anti-greedy
+Split epochs: [11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47]
+
+Results saved to experiments/x2_demo/output/cifar10/comparison_results.csv
+Loading results from experiments/x2_demo/output/cifar10/comparison_results.csv...
+             count      mean       std  ...       50%       75%       max
+variation                               ...                              
+anti-greedy   20.0  1.510178  0.008774  ...  1.509296  1.515365  1.527123
+baseline      20.0  1.516496  0.009903  ...  1.514518  1.521145  1.543431
+greedy        20.0  1.511631  0.005905  ...  1.513887  1.515772  1.522160
+random        20.0  1.514219  0.008217  ...  1.514031  1.520878  1.526835
+
+[4 rows x 8 columns]
+Plot saved to experiments/x2_demo/output/cifar10/comparison_plot.png
+Stats saved to experiments/x2_demo/output/cifar10/significance_tests.txt

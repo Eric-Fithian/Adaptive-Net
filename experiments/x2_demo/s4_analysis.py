@@ -41,6 +41,15 @@ if __name__ == "__main__":
     sns.barplot(
         data=df, x="variation", y="final_test_loss", capsize=0.1, errorbar=("ci", 95)
     )
+    
+    # Adjust Y-axis to zoom in on differences
+    min_val = df["final_test_loss"].min()
+    max_val = df["final_test_loss"].max()
+    margin = (max_val - min_val) * 0.2  # Add 20% margin
+    if margin == 0: margin = 0.01
+    
+    plt.ylim(min_val - margin, max_val + margin)
+    
     plt.title("Final Test Loss by Splitting Strategy (CIFAR-10)")
     plt.ylabel("Test Loss")
     plt.xlabel("Strategy")

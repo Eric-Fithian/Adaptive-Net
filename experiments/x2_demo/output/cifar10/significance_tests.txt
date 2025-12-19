@@ -2,17 +2,27 @@ Significance Tests (T-test)
 ===========================
 
 baseline vs random:
-  t-statistic: -0.3739
-  p-value: 7.0931e-01
+  t-statistic: 0.7914
+  p-value: 4.3379e-01
   Significant (p < 0.05): False
 
 baseline vs greedy:
-  t-statistic: -0.2458
-  p-value: 8.0632e-01
+  t-statistic: 1.8872
+  p-value: 6.8537e-02
   Significant (p < 0.05): False
 
+baseline vs anti-greedy:
+  t-statistic: 2.1355
+  p-value: 3.9320e-02
+  Significant (p < 0.05): True
+
 random vs greedy:
-  t-statistic: 0.1524
-  p-value: 8.7921e-01
+  t-statistic: 1.1439
+  p-value: 2.6055e-01
+  Significant (p < 0.05): False
+
+anti-greedy vs greedy:
+  t-statistic: -0.6142
+  p-value: 5.4325e-01
   Significant (p < 0.05): False
 
