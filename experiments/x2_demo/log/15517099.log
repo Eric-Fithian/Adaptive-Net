@@ -1,0 +1,66 @@
+==========================================
+SLURM_JOB_ID = 15517099
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu03
+==========================================
+Device available: cuda
+
+============================================================
+MNIST Dataset Creation Experiment (Part 1)
+============================================================
+Dataset: MNIST
+Regimes: {'demo': 30}
+Action epoch range: (11, 42)
+Inits: 10
+============================================================
+
+Loading MNIST dataset...
+Starting training...
+Stratified action epochs: [11, 14, 18, 21, 25, 28, 32, 35, 39, 42]
+Total model initializations: 100 (1 regimes × 10 slices × 10 inits/slice)
+
+Processing results...
+
+Results saved to: experiments/x2_demo/output/mnist/training_metrics.csv
+Loading data from experiments/x2_demo/output/mnist/training_metrics.csv...
+Data shape: (1000, 525)
+Class balance: {1: 0.815, 0: 0.185}
+Number of features: 481
+Training Logistic Regression model...
+
+Test Accuracy: 0.6950
+Test ROC AUC: 0.6417
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.29      0.34      0.31        41
+           1       0.82      0.79      0.80       159
+
+    accuracy                           0.69       200
+   macro avg       0.56      0.56      0.56       200
+weighted avg       0.71      0.70      0.70       200
+
+
+Model saved to experiments/x2_demo/output/mnist/lr_model.joblib
+Device available: cuda
+Loading LR model from experiments/x2_demo/output/mnist/lr_model.joblib...
+Loading CIFAR-10 dataset...
+
+Running variation: baseline
+
+Running variation: random
+
+Running variation: greedy
+
+Results saved to experiments/x2_demo/output/cifar10/comparison_results.csv
+Loading results from experiments/x2_demo/output/cifar10/comparison_results.csv...
+           count      mean       std  ...       50%       75%       max
+variation                             ...                              
+baseline    50.0  1.516673  0.008243  ...  1.516466  1.520248  1.537100
+greedy      50.0  1.517069  0.007878  ...  1.516301  1.522664  1.534942
+random      50.0  1.517333  0.009386  ...  1.518032  1.524073  1.539790
+
+[3 rows x 8 columns]
+Plot saved to experiments/x2_demo/output/cifar10/comparison_plot.png
+Stats saved to experiments/x2_demo/output/cifar10/significance_tests.txt

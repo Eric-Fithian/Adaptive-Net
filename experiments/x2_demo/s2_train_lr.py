@@ -34,16 +34,19 @@ if __name__ == "__main__":
     print(f"Data shape: {df.shape}")
 
     # Define target
-    # Horizon 8 corresponds to h0 because we only requested one window [8]
-    if "delta_test_loss_at_h0" not in df.columns:
-        print("Error: 'delta_test_loss_at_h0' not found in columns.")
+    # We want to predict improvement at horizon 8 (8 epochs after split).
+    # Since indices are 0-based (h0 = +1 epoch), h7 = +8 epochs.
+    target_col = "delta_test_loss_at_h7"
+    
+    if target_col not in df.columns:
+        print(f"Error: '{target_col}' not found in columns.")
         print("Available columns:", df.columns.tolist())
         exit(1)
 
     # Target: 1 if delta < 0 (improvement), 0 otherwise
-    # First drop rows where target is NaN
-    df = df.dropna(subset=["delta_test_loss_at_h0"])
-    y = (df["delta_test_loss_at_h0"] < 0).astype(int)
+    # First drop rows where target is NaN (e.g. if split happened too late)
+    df = df.dropna(subset=[target_col])
+    y = (df[target_col] < 0).astype(int)
     print(f"Class balance: {y.value_counts(normalize=True).to_dict()}")
 
     # Define features
@@ -54,7 +57,7 @@ if __name__ == "__main__":
         "init_id",
         "neuron_idx",
         "action_epoch",
-        "delta_test_loss_at_h0",
+        target_col,
     ]
     # Also exclude any other potential target columns if they exist
     exclude_cols.extend([c for c in df.columns if "delta_test_loss" in c])

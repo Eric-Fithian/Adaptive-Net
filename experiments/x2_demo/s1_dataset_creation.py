@@ -33,15 +33,15 @@ if __name__ == "__main__":
     BATCH_SIZE = 128
     WARMUP_EPOCHS = 10
     EPOCHS = 50  # Total epochs to run
-    ACTION_EPOCH_RANGE = (25, 25)  # Fixed split epoch at 25
-    N_ACTION_EPOCH_SLICES = 1
-    N_INITS_PER_SLICE = 40
+    ACTION_EPOCH_RANGE = (11, 42)  # End at 42 to ensure 8 epochs of future data (50-42=8)
+    N_ACTION_EPOCH_SLICES = 10
+    N_INITS_PER_SLICE = 10
     LR = 0.001
     N_NEURONS_PER_INIT = 10  # All neurons in the layer
     TEMPORAL_WINDOWS = [8]  # Fixed horizon
 
     REGIME_DICT = {
-        "demo": 10,
+        "demo": 30,
     }
 
     print(f"\n{'='*60}")

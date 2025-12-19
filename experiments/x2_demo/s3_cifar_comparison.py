@@ -62,7 +62,7 @@ def run_variation(
     warmup_epochs = 10
     lr = 0.001
     temporal_windows = [8]
-    starting_width = 10
+    starting_width = 30
     n_outputs = 10  # CIFAR-10
     n_features = 3072  # 32*32*3
 
