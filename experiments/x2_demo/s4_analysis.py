@@ -32,10 +32,6 @@ if __name__ == "__main__":
         df = pd.read_csv(input_csv)
     except FileNotFoundError:
         print(f"Error: {input_csv} not found. Run s3_cifar_comparison.py first.")
-        # Create dummy data for testing the script structure if needed, but better to fail here.
-        # exit(1)
-        # For the sake of the user running this now without previous steps completed, I will generate mock data if file missing?
-        # No, the user instructions say "Implement everything thoroughly".
         exit(1)
 
     print(df.groupby("variation")["final_test_loss"].describe())
@@ -61,7 +57,22 @@ if __name__ == "__main__":
         f.write("Significance Tests (T-test)\n")
         f.write("===========================\n\n")
 
-        pairs = [("baseline", "random"), ("baseline", "greedy"), ("random", "greedy")]
+        # Define pairs to compare
+        pairs = []
+        # Compare everything against baseline
+        if "baseline" in variations:
+            for v in variations:
+                if v != "baseline":
+                    pairs.append(("baseline", v))
+
+        # Compare greedy vs random, greedy vs anti-greedy
+        if "greedy" in variations and "random" in variations:
+            pairs.append(("random", "greedy"))
+        if "greedy" in variations and "anti-greedy" in variations:
+            pairs.append(("anti-greedy", "greedy"))
+
+        # Add any other missing pairwise comparisons if needed, or just do all vs all
+        # Let's stick to the key hypotheses
 
         for v1, v2 in pairs:
             if v1 in results and v2 in results:

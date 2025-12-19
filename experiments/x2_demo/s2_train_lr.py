@@ -20,6 +20,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 if __name__ == "__main__":
+    TARGET_TEST_LOSS_HORIZON = 8
+
     experiment_dir = Path("experiments/x2_demo")
     input_csv = experiment_dir / "output" / "mnist" / "training_metrics.csv"
     output_model = experiment_dir / "output" / "mnist" / "lr_model.joblib"
@@ -36,8 +38,8 @@ if __name__ == "__main__":
     # Define target
     # We want to predict improvement at horizon 8 (8 epochs after split).
     # Since indices are 0-based (h0 = +1 epoch), h7 = +8 epochs.
-    target_col = "delta_test_loss_at_h7"
-    
+    target_col = f"delta_test_loss_at_h{TARGET_TEST_LOSS_HORIZON - 1}"
+
     if target_col not in df.columns:
         print(f"Error: '{target_col}' not found in columns.")
         print("Available columns:", df.columns.tolist())
@@ -57,9 +59,8 @@ if __name__ == "__main__":
         "init_id",
         "neuron_idx",
         "action_epoch",
-        target_col,
     ]
-    # Also exclude any other potential target columns if they exist
+    # Also exclude any other target columns
     exclude_cols.extend([c for c in df.columns if "delta_test_loss" in c])
 
     feature_cols = [c for c in df.columns if c not in exclude_cols]

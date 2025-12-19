@@ -1,16 +1,18 @@
 """
 Script for Part 3 of the demo experiment (x2).
-Compares 3 model variations on CIFAR-10.
+Compares 4 model variations on CIFAR-10.
 
 Variations:
 1. Baseline: No splitting.
-2. Random Split: Split a random neuron at epoch 25.
-3. Greedy Split: Split the best neuron (per LR model) at epoch 25.
+2. Random Split: Split a random neuron every 4 epochs starting from epoch 11.
+3. Greedy Split: Split the best neuron (per LR model) every 4 epochs starting from epoch 11.
+4. Anti-Greedy Split: Split the worst neuron (per LR model) every 4 epochs starting from epoch 11.
 
 - Dataset: CIFAR-10
-- Regimes: Hidden layer size 10
+- Regimes: Hidden layer size 30
 - Inits: 50 per variation
-- Epochs: 50 (Split at 25)
+- Epochs: 50
+- Split Schedule: Epochs [11, 15, 19, 23, 27, 31, 35, 39, 43, 47]
 """
 
 import torch
@@ -58,7 +60,11 @@ def run_variation(
     results = []
 
     epochs = 50
-    split_epoch = 25
+    split_interval = 4
+    start_split_epoch = 11
+    # Create list of split epochs: 11, 15, 19, ... < 50
+    split_epochs = list(range(start_split_epoch, epochs, split_interval))
+
     warmup_epochs = 10
     lr = 0.001
     temporal_windows = [8]
@@ -69,6 +75,7 @@ def run_variation(
     loss_fn = nn.CrossEntropyLoss()
 
     print(f"\nRunning variation: {variation_type}")
+    print(f"Split epochs: {split_epochs}")
 
     for init_id in tqdm(range(n_inits), desc=f"{variation_type}"):
         # Base model
@@ -92,103 +99,137 @@ def run_variation(
             use_cosine=True,
         )
 
-        # Train to split epoch
-        trainer.fit(
+        # Initial training segment before first split
+        first_segment_end = split_epochs[0] if variation_type != "baseline" else epochs
+
+        res = trainer.fit(
             train_loader=train_loader,
             test_loader=test_loader,
             start_epoch=0,
-            end_epoch=split_epoch,
-            deterministic=True,  # Ensure reproducibility if seeded, but here we want different inits?
-            # Trainer.fit seeds if deterministic=True.
-            # Actually, we want different inits.
-            # run_split_correlation_experiment doesn't explicit seed per init,
-            # but the model init is random.
-            # Note: Trainer.fit with deterministic=True sets seed based on epoch?
-            # No, let's look at Trainer.fit. It doesn't seem to force seed unless we tell it.
-            # But wait, run_split_correlation_experiment relies on different inits.
-            # Let's assume standard initialization is random.
+            end_epoch=first_segment_end,
+            deterministic=True,
         )
 
-        final_test_loss = 0.0
+        final_test_loss = (
+            res["test_losses_epoch"][-1] if res["test_losses_epoch"] else float("inf")
+        )
 
         if variation_type == "baseline":
-            # Continue training to end
-            res = trainer.fit(
-                train_loader=train_loader,
-                test_loader=test_loader,
-                start_epoch=split_epoch,
-                end_epoch=epochs,
-                deterministic=True,
-            )
-            final_test_loss = res["test_losses_epoch"][-1]
+            # Already trained to completion
+            pass
 
-        elif variation_type in ["random", "greedy"]:
+        elif variation_type in ["random", "greedy", "anti-greedy"]:
             wrapper: StatsWrapper = trainer.model
 
-            target_neuron_idx = -1
+            # Loop through each split epoch
+            current_epoch = first_segment_end
 
-            if variation_type == "random":
-                target_neuron_idx = random.randint(0, starting_width - 1)
+            # Note: We iterate through split_epochs.
+            # We just finished training up to `current_epoch` (which is split_epochs[0]).
+            # So we perform the split NOW, then train to the next target.
 
-            elif variation_type == "greedy":
-                if lr_model is None:
-                    raise ValueError("LR model required for greedy split")
+            # We need to handle the loop carefully.
+            # split_epochs = [11, 15, ...]
+            # We just trained 0 -> 11. Now at epoch 11 (completed).
+            # Perform split.
+            # Train 11 -> 15.
+            # ...
 
-                # Collect stats for all neurons
-                candidates = []
-                for idx in range(starting_width):
-                    feats = get_neuron_features(wrapper, idx, temporal_windows)
-                    feats["neuron_idx"] = (
-                        idx  # Ensure this is present if needed, though likely dropped
-                    )
-                    candidates.append(feats)
+            # Let's iterate through the split points
+            # We've already reached split_epochs[0]
 
-                df_candidates = pd.DataFrame(candidates)
+            # Prepare the schedule of segments
+            # [(11, 15), (15, 19), ..., (last_split, 50)]
 
-                # Align columns with model features
-                # Missing columns filled with 0 (or handled by imputer if it was part of training)
-                # The pipeline handles imputation, but we need to ensure all expected columns are present.
-                # If feature_columns is provided, we reindex.
-                if feature_columns is not None:
-                    # Add missing columns as NaN (to be imputed)
-                    for col in feature_columns:
-                        if col not in df_candidates.columns:
-                            df_candidates[col] = np.nan
-                    # Select only feature columns in correct order
-                    X_candidates = df_candidates[feature_columns]
-                else:
-                    X_candidates = df_candidates
+            schedule = []
+            for i in range(len(split_epochs)):
+                start = split_epochs[i]
+                end = split_epochs[i + 1] if i + 1 < len(split_epochs) else epochs
+                schedule.append((start, end))
 
-                # Predict probability of improvement
-                probs = lr_model.predict_proba(X_candidates)[:, 1]
-                target_neuron_idx = np.argmax(probs)
+            # Loop through splits
+            for i, (start_seg, end_seg) in enumerate(schedule):
+                # We are currently at epoch `start_seg` (completed)
+                # Perform split action based on stats captured during previous segment
 
-            # Split the neuron
-            split_neuron(
-                network=wrapper,
-                input_layer_idx=0,
-                output_layer_idx=2,
-                neuron_idx=target_neuron_idx,
-                input_splitter=ExactCopy(),
-                output_splitter=OrthogonalDecomp(),
-            )
+                current_width = wrapper.layers[0].out_features
+                target_neuron_idx = -1
 
-            # Update optimizer with new params
-            existing = {
-                id(p) for g in trainer.optimizer.param_groups for p in g["params"]
-            }
-            new_params = [p for p in wrapper.parameters() if id(p) not in existing]
-            trainer.add_new_params_follow_scheduler(new_params)
+                if variation_type == "random":
+                    target_neuron_idx = random.randint(0, current_width - 1)
 
-            # Continue training
-            res = trainer.fit(
-                train_loader=train_loader,
-                test_loader=test_loader,
-                start_epoch=split_epoch,
-                end_epoch=epochs,
-                deterministic=True,
-            )
-            final_test_loss = res["test_losses_epoch"][-1]
+                elif variation_type in ["greedy", "anti-greedy"]:
+                    if lr_model is None:
+                        raise ValueError(
+                            f"LR model required for {variation_type} split"
+                        )
+
+                    # Collect stats for all neurons
+                    candidates = []
+                    for idx in range(current_width):
+                        feats = get_neuron_features(wrapper, idx, temporal_windows)
+                        feats["neuron_idx"] = idx
+                        candidates.append(feats)
+
+                    df_candidates = pd.DataFrame(candidates)
+
+                    # Align columns
+                    if feature_columns is not None:
+                        for col in feature_columns:
+                            if col not in df_candidates.columns:
+                                df_candidates[col] = np.nan
+                        X_candidates = df_candidates[feature_columns]
+                    else:
+                        X_candidates = df_candidates
+
+                    # Predict probability of improvement
+                    # Fill NaNs if any remaining (imputer in pipeline should handle, but be safe)
+                    # X_candidates = X_candidates.fillna(0)
+
+                    try:
+                        probs = lr_model.predict_proba(X_candidates)[:, 1]
+
+                        if variation_type == "greedy":
+                            target_neuron_idx = np.argmax(probs)
+                        else:  # anti-greedy
+                            target_neuron_idx = np.argmin(probs)
+
+                    except Exception as e:
+                        print(
+                            f"Prediction failed at step {i}, fallback to random. Error: {e}"
+                        )
+                        target_neuron_idx = random.randint(0, current_width - 1)
+
+                # Split the neuron
+                split_neuron(
+                    network=wrapper,
+                    input_layer_idx=0,
+                    output_layer_idx=2,
+                    neuron_idx=target_neuron_idx,
+                    input_splitter=ExactCopy(),
+                    output_splitter=OrthogonalDecomp(),
+                )
+
+                # Update optimizer with new params
+                existing = {
+                    id(p) for g in trainer.optimizer.param_groups for p in g["params"]
+                }
+                new_params = [p for p in wrapper.parameters() if id(p) not in existing]
+                trainer.add_new_params_follow_scheduler(new_params)
+
+                # Train the next segment
+                res = trainer.fit(
+                    train_loader=train_loader,
+                    test_loader=test_loader,
+                    start_epoch=start_seg,
+                    end_epoch=end_seg,
+                    deterministic=True,
+                )
+                final_test_loss = (
+                    res["test_losses_epoch"][-1]
+                    if res["test_losses_epoch"]
+                    else final_test_loss
+                )
 
         results.append(
             {
@@ -225,24 +266,11 @@ if __name__ == "__main__":
         elif hasattr(lr_model, "feature_names_in_"):
             feature_columns = lr_model.feature_names_in_
         else:
-            # Fallback: Load the training data column names used
-            train_csv = experiment_dir / "output" / "mnist" / "training_metrics.csv"
-            df_train = pd.read_csv(train_csv)
-            # Apply same exclusion logic as s2
-            exclude_cols = [
-                "regime_name",
-                "starting_width",
-                "init_id",
-                "neuron_idx",
-                "action_epoch",
-                "delta_test_loss_at_h0",
-            ]
-            exclude_cols.extend([c for c in df_train.columns if "delta_test_loss" in c])
-            feature_columns = [c for c in df_train.columns if c not in exclude_cols]
-            print("Loaded feature columns from training CSV.")
-
+            raise ValueError("Feature columns not found in LR model.")
     except FileNotFoundError:
-        print("Model file not found. Skipping Greedy variation or failing.")
+        print(
+            "Model file not found. Skipping Greedy/Anti-Greedy variations or failing."
+        )
         lr_model = None
         feature_columns = None
 
@@ -263,14 +291,26 @@ if __name__ == "__main__":
     res_random = run_variation("random", 50, train_loader, test_loader, DEVICE)
     all_results.extend(res_random)
 
-    # 3. Greedy
     if lr_model is not None:
+        # 3. Greedy
         res_greedy = run_variation(
             "greedy", 50, train_loader, test_loader, DEVICE, lr_model, feature_columns
         )
         all_results.extend(res_greedy)
+
+        # 4. Anti-Greedy
+        res_anti = run_variation(
+            "anti-greedy",
+            50,
+            train_loader,
+            test_loader,
+            DEVICE,
+            lr_model,
+            feature_columns,
+        )
+        all_results.extend(res_anti)
     else:
-        print("Skipping Greedy variation due to missing model.")
+        print("Skipping Greedy/Anti-Greedy variations due to missing model.")
 
     # Save results
     df_results = pd.DataFrame(all_results)
