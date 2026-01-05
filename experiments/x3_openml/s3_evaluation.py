@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 from anet import (
-    split_neuron, ExactCopy, OrthogonalDecomp, 
+    split_neuron, ExactCopy, OrthogonalDecomp, Half, WithNoise,
     WidenableLinear, StatsWrapper, Trainer
 )
 from experiments.x3_openml.utils import get_dataset_splits, get_openml_dataset
@@ -34,7 +34,17 @@ def get_neuron_features(wrapper, neuron_idx, temporal_windows=[2, 4, 8, 16, 32])
         stats.update(wrapper.get_neuron_stats_temporal(0, 2, neuron_idx, w))
     return stats
 
-def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_classes, lr_model, device):
+def get_output_splitter(split_method: str):
+    """Return the appropriate output splitter for the given method."""
+    if split_method == "half_noise":
+        return WithNoise(Half(), sigma_ratio=0.01)
+    elif split_method == "orthogonal":
+        return OrthogonalDecomp()
+    else:
+        raise ValueError(f"Unknown split method: {split_method}")
+
+
+def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_classes, lr_model, device, split_method: str):
     results = []
     
     # Config
@@ -51,6 +61,8 @@ def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_c
     
     VARIATIONS = ["baseline", "random", "greedy", "anti-greedy"]
     N_INITS = 3 # Small number of seeds per dataset
+    
+    output_splitter = get_output_splitter(split_method)
     
     feature_columns = None
     if lr_model is not None:
@@ -155,7 +167,7 @@ def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_c
                             output_layer_idx=2,
                             neuron_idx=target_idx,
                             input_splitter=ExactCopy(),
-                            output_splitter=OrthogonalDecomp()
+                            output_splitter=output_splitter
                         )
                         
                         # Add params
@@ -170,6 +182,7 @@ def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_c
                             
                 results.append({
                     'dataset': dataset_name,
+                    'split_method': split_method,
                     'variation': var,
                     'init_id': init_id,
                     'final_test_loss': final_loss
@@ -181,36 +194,47 @@ def run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_c
 
 if __name__ == "__main__":
     experiment_dir = Path("experiments/x3_openml")
-    model_path = experiment_dir / "output_local" / "policy_model.joblib"
     output_dir = experiment_dir / "output_local" / "evaluation"
     output_dir.mkdir(parents=True, exist_ok=True)
     
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     
-    print("Loading Policy Model...")
-    try:
-        lr_model = joblib.load(model_path)
-    except:
-        print("Model not found!")
-        exit(1)
+    # Two split methods to compare
+    SPLIT_METHODS = ["half_noise", "orthogonal"]
         
     _, test_ids = get_dataset_splits()
     print(f"Meta-Test Datasets: {len(test_ids)}")
+    print(f"Split Methods: {SPLIT_METHODS}")
     
-    for d_id in tqdm(test_ids, desc="Eval Datasets"):
-        dataset_name = f"openml_{d_id}"
-        csv_path = output_dir / f"{dataset_name}_results.csv"
+    for split_method in SPLIT_METHODS:
+        print(f"\n=== Running evaluation with split method: {split_method} ===")
         
-        if csv_path.exists():
+        # Load the policy model trained for this split method
+        model_path = experiment_dir / "output_local" / f"policy_model_{split_method}.joblib"
+        print(f"Loading Policy Model: {model_path}")
+        try:
+            lr_model = joblib.load(model_path)
+        except:
+            print(f"Model not found for {split_method}! Run s2 first.")
             continue
-            
-        train_loader, test_loader, input_dim, n_classes = get_openml_dataset(d_id, DEVICE)
-        if train_loader is None:
-            continue
-            
-        results = run_evaluation(d_id, dataset_name, train_loader, test_loader, input_dim, n_classes, lr_model, DEVICE)
         
-        pd.DataFrame(results).to_csv(csv_path, index=False)
+        for d_id in tqdm(test_ids, desc=f"Eval Datasets ({split_method})"):
+            dataset_name = f"openml_{d_id}"
+            csv_path = output_dir / f"{dataset_name}_{split_method}_results.csv"
+            
+            if csv_path.exists():
+                continue
+                
+            train_loader, test_loader, input_dim, n_classes = get_openml_dataset(d_id, DEVICE)
+            if train_loader is None:
+                continue
+                
+            results = run_evaluation(
+                d_id, dataset_name, train_loader, test_loader, 
+                input_dim, n_classes, lr_model, DEVICE, split_method
+            )
+            
+            pd.DataFrame(results).to_csv(csv_path, index=False)
         
-    print("Evaluation Complete.")
+    print("\nEvaluation Complete.")
 

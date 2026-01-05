@@ -1,7 +1,7 @@
 """
 Step 1: Meta-Data Collection
 Run the correlation experiment on the 'Meta-Train' subset of OpenML datasets.
-Collects (metrics -> delta_loss) pairs.
+Collects (metrics -> delta_loss) pairs for each split method.
 """
 
 import torch
@@ -15,16 +15,28 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from anet import run_split_correlation_experiment
+from anet import run_split_correlation_experiment, OrthogonalDecomp, Half, WithNoise
 from experiments.x3_openml.utils import get_dataset_splits, get_openml_dataset
+
+
+def get_output_splitter(split_method: str):
+    """Return the appropriate output splitter for the given method."""
+    if split_method == "half_noise":
+        return WithNoise(Half(), sigma_ratio=0.01)
+    elif split_method == "orthogonal":
+        return OrthogonalDecomp()
+    else:
+        raise ValueError(f"Unknown split method: {split_method}")
+
 
 if __name__ == "__main__":
     experiment_dir = Path("experiments/x3_openml")
-    output_dir = experiment_dir / "output_local" / "data_collection"
-    output_dir.mkdir(parents=True, exist_ok=True)
     
     # Experiment Config
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    # Two split methods to compare
+    SPLIT_METHODS = ["half_noise", "orthogonal"]
     
     # We use a modest config to get through many datasets
     CONFIG = {
@@ -44,48 +56,59 @@ if __name__ == "__main__":
     
     train_ids, _ = get_dataset_splits()
     print(f"Meta-Train Datasets: {len(train_ids)}")
+    print(f"Split Methods: {SPLIT_METHODS}")
     
-    for d_id in tqdm(train_ids, desc="Datasets"):
-        dataset_name = f"openml_{d_id}"
-        csv_path = output_dir / f"{dataset_name}.csv"
+    for split_method in SPLIT_METHODS:
+        print(f"\n{'='*60}")
+        print(f"Running data collection for split method: {split_method}")
+        print(f"{'='*60}")
         
-        if csv_path.exists():
-            print(f"Skipping {dataset_name} (already exists)")
-            continue
-            
-        train_loader, test_loader, input_dim, n_classes = get_openml_dataset(d_id, DEVICE)
+        output_dir = experiment_dir / "output_local" / f"data_collection_{split_method}"
+        output_dir.mkdir(parents=True, exist_ok=True)
         
-        if train_loader is None:
-            continue
-            
-        print(f"Running {dataset_name}: {input_dim} features, {n_classes} classes")
+        output_splitter = get_output_splitter(split_method)
         
-        try:
-            stats = run_split_correlation_experiment(
-                dataset_name=dataset_name,
-                train_loader=train_loader,
-                test_loader=test_loader,
-                regime_dict=CONFIG['regime_dict'],
-                warmup_epochs=CONFIG['warmup_epochs'],
-                epochs=CONFIG['epochs'],
-                action_epoch_range=CONFIG['action_epoch_range'],
-                n_action_epoch_slices=CONFIG['n_action_epoch_slices'],
-                n_inits_per_slice=CONFIG['n_inits_per_slice'],
-                lr=CONFIG['lr'],
-                device=DEVICE,
-                loss_fn=nn.CrossEntropyLoss(),
-                n_outputs=n_classes,
-                n_neurons_per_init=CONFIG['n_neurons_per_init'],
-                temporal_windows=CONFIG['temporal_windows'],
-            )
+        for d_id in tqdm(train_ids, desc=f"Datasets ({split_method})"):
+            dataset_name = f"openml_{d_id}"
+            csv_path = output_dir / f"{dataset_name}.csv"
             
-            df = pd.DataFrame(stats)
-            df.to_csv(csv_path, index=False)
+            if csv_path.exists():
+                print(f"Skipping {dataset_name} (already exists)")
+                continue
+                
+            train_loader, test_loader, input_dim, n_classes = get_openml_dataset(d_id, DEVICE)
             
-        except Exception as e:
-            print(f"Error processing {dataset_name}: {e}")
-            import traceback
-            traceback.print_exc()
+            if train_loader is None:
+                continue
+                
+            print(f"Running {dataset_name}: {input_dim} features, {n_classes} classes")
+            
+            try:
+                stats = run_split_correlation_experiment(
+                    dataset_name=dataset_name,
+                    train_loader=train_loader,
+                    test_loader=test_loader,
+                    regime_dict=CONFIG['regime_dict'],
+                    warmup_epochs=CONFIG['warmup_epochs'],
+                    epochs=CONFIG['epochs'],
+                    action_epoch_range=CONFIG['action_epoch_range'],
+                    n_action_epoch_slices=CONFIG['n_action_epoch_slices'],
+                    n_inits_per_slice=CONFIG['n_inits_per_slice'],
+                    lr=CONFIG['lr'],
+                    device=DEVICE,
+                    loss_fn=nn.CrossEntropyLoss(),
+                    n_outputs=n_classes,
+                    n_neurons_per_init=CONFIG['n_neurons_per_init'],
+                    temporal_windows=CONFIG['temporal_windows'],
+                    output_splitter=output_splitter,
+                )
+                
+                df = pd.DataFrame(stats)
+                df.to_csv(csv_path, index=False)
+                
+            except Exception as e:
+                print(f"Error processing {dataset_name}: {e}")
+                import traceback
+                traceback.print_exc()
 
-    print("\nData collection complete.")
-
+    print("\nData collection complete for all split methods.")

@@ -13,7 +13,7 @@ from typing import List, Dict, Tuple
 from copy import deepcopy
 from tqdm import tqdm
 
-from anet import split_neuron, ExactCopy, OrthogonalDecomp, WidenableLinear, StatsWrapper, Trainer
+from anet import split_neuron, ExactCopy, OrthogonalDecomp, Half, WithNoise, WeightSplitStrategy, WidenableLinear, StatsWrapper, Trainer
 
 
 def run_split_correlation_experiment(
@@ -32,6 +32,7 @@ def run_split_correlation_experiment(
     n_outputs: int | None = None,
     n_neurons_per_init: int = 4,
     temporal_windows: List[int] = [2, 4, 8, 16, 32, 64, 128],
+    output_splitter: WeightSplitStrategy | None = None,
 ) -> List[Dict]:
     """
     Run correlation experiment for neuron splitting with stratified action epochs.
@@ -73,6 +74,8 @@ def run_split_correlation_experiment(
             - Regression: output dimension (1 for scalar targets)
         n_neurons_per_init: Number of neurons to split per initialization.
         temporal_windows: List of temporal window sizes for statistics.
+        output_splitter: Strategy for splitting output weights. If None, defaults to
+            OrthogonalDecomp(). Common options: OrthogonalDecomp(), WithNoise(Half(), 0.01).
         
     Returns:
         List of dictionaries containing statistics and performance metrics.
@@ -103,6 +106,10 @@ def run_split_correlation_experiment(
         ...     temporal_windows=[2, 4, 8, 16, 32],
         ... )
     """
+    # Default output splitter
+    if output_splitter is None:
+        output_splitter = OrthogonalDecomp()
+    
     # Get input dimension from data
     n_features = train_loader.dataset.tensors[0].shape[1]
     y = train_loader.dataset.tensors[1]
@@ -253,7 +260,7 @@ def run_split_correlation_experiment(
                         output_layer_idx=2,
                         neuron_idx=neuron_idx,
                         input_splitter=ExactCopy(),
-                        output_splitter=OrthogonalDecomp(),
+                        output_splitter=output_splitter,
                     )
                     
                     # Add new parameters to optimizer
