@@ -1,0 +1,61 @@
+==========================================
+SLURM_JOB_ID = 15588740
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mcn53
+==========================================
+Analyzing 115 OpenML-CC18 datasets...
+Output directory: experiments/x3_openml/output/data_description
+Error processing dataset 1168: Target column 'SMPEP2' has 2 missing values. Missing values are not supported for target columns.
+Error processing dataset 1241: Sparse ARFF datasets cannot be loaded with as_frame=True. Use as_frame=False or as_frame='auto' instead.
+Error processing dataset 1242: Sparse ARFF datasets cannot be loaded with as_frame=True. Use as_frame=False or as_frame='auto' instead.
+Error processing dataset 40511: Dataset with data_id 40511 not found.
+Error processing dataset 40927: md5 checksum of local file for https://openml.org/data/v1/download/16797613/CIFAR_10.arff does not match description: expected: 556e01684912de400da7557c57155b97 but got b09893503b6319a709d713c244475133. Downloaded file could have been modified / corrupted, clean cache and retry...
+
+Saved dataset descriptions to experiments/x3_openml/output/data_description/dataset_descriptions.csv
+Saved summary statistics to experiments/x3_openml/output/data_description/summary_statistics.csv
+
+============================================================
+OPENML-CC18 DATASET SUMMARY
+============================================================
+
+Total datasets: 115
+  - Successfully analyzed: 110
+  - Failed: 5
+
+Train/Test Split:
+  - Train: 80 datasets
+  - Test: 35 datasets
+
+Task Types:
+task_type
+classification    110
+unknown             5
+
+Dataset Sizes:
+  Samples:  min=500, max=1997410, median=2054
+  Features: min=3, max=10935, median=34
+  Classes:  min=2, max=100, median=2
+
+Feature Types (total across all datasets):
+  Numeric:     104513 (96.9%)
+  Categorical: 3346 (3.1%)
+
+Missing Data:
+  Datasets with no missing data: 96
+  Datasets with >10% missing: 4
+  Mean missing percentage: 2.20%
+
+Class Balance (max/min class count ratio):
+  Perfectly balanced (ratio=1): 17
+  Moderately imbalanced (1-10): 69
+  Highly imbalanced (>10): 24
+
+Feature Variance (numeric features only):
+  Mean variance across datasets: 47355749633710347867746954916134912.0000
+  Median variance across datasets: 4374.9674
+
+Generating visualizations...
+Saved visualizations to experiments/x3_openml/output/data_description
+Saved text report to experiments/x3_openml/output/data_description/eda_report.txt
+
+Data description complete!

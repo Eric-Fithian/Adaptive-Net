@@ -1,0 +1,363 @@
+==========================================
+SLURM_JOB_ID = 15603289
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu03
+==========================================
+Meta-Train Datasets: 80
+Split Methods: ['half_noise', 'orthogonal']
+
+============================================================
+Running data collection for split method: half_noise
+============================================================
+Skipping openml_1476 (already exists)
+Skipping openml_40982 (already exists)
+Skipping openml_41027 (already exists)
+Skipping openml_1217 (already exists)
+Skipping openml_1468 (already exists)
+Skipping openml_44 (already exists)
+Skipping openml_1466 (already exists)
+Skipping openml_1489 (already exists)
+Skipping openml_1492 (already exists)
+Skipping openml_1462 (already exists)
+Skipping openml_1053 (already exists)
+Skipping openml_1486 (already exists)
+Skipping openml_23 (already exists)
+Skipping openml_40509 (already exists)
+Skipping openml_1146 (already exists)
+Skipping openml_40496 (already exists)
+Skipping openml_4134 (already exists)
+Skipping openml_40498 (already exists)
+Skipping openml_469 (already exists)
+Skipping openml_1116 (already exists)
+Skipping openml_6 (already exists)
+Skipping openml_1067 (already exists)
+Skipping openml_182 (already exists)
+Skipping openml_18 (already exists)
+Skipping openml_1111 (already exists)
+Skipping openml_1457 (already exists)
+Skipping openml_1501 (already exists)
+Skipping openml_22 (already exists)
+Skipping openml_1235 (already exists)
+Skipping openml_1478 (already exists)
+Skipping openml_1233 (already exists)
+Skipping openml_40515 (already exists)
+Skipping openml_1119 (already exists)
+Skipping openml_1218 (already exists)
+Skipping openml_1130 (already exists)
+Skipping openml_1487 (already exists)
+Skipping openml_188 (already exists)
+Skipping openml_1590 (already exists)
+Skipping openml_28 (already exists)
+Skipping openml_1497 (already exists)
+Fetching OpenML dataset ID=40927...
+Failed to fetch dataset 40927: md5 checksum of local file for https://openml.org/data/v1/download/16797613/CIFAR_10.arff does not match description: expected: 556e01684912de400da7557c57155b97 but got b09893503b6319a709d713c244475133. Downloaded file could have been modified / corrupted, clean cache and retry...
+Skipping openml_40979 (already exists)
+Skipping openml_307 (already exists)
+Skipping openml_16 (already exists)
+Fetching OpenML dataset ID=1168...
+Failed to fetch dataset 1168: Target column 'SMPEP2' has 2 missing values. Missing values are not supported for target columns.
+Skipping openml_1464 (already exists)
+Skipping openml_1461 (already exists)
+Skipping openml_40996 (already exists)
+Skipping openml_1134 (already exists)
+Skipping openml_11 (already exists)
+Skipping openml_40670 (already exists)
+Skipping openml_23381 (already exists)
+Skipping openml_1480 (already exists)
+Skipping openml_1114 (already exists)
+Skipping openml_300 (already exists)
+Skipping openml_1238 (already exists)
+Skipping openml_1240 (already exists)
+Skipping openml_1120 (already exists)
+Skipping openml_1128 (already exists)
+Skipping openml_40966 (already exists)
+Skipping openml_50 (already exists)
+Fetching OpenML dataset ID=40511...
+Failed to fetch dataset 40511: Dataset with data_id 40511 not found.
+Skipping openml_1475 (already exists)
+Skipping openml_40499 (already exists)
+Skipping openml_42 (already exists)
+Skipping openml_1242 (already exists)
+Skipping openml_15 (already exists)
+Skipping openml_1068 (already exists)
+Skipping openml_1139 (already exists)
+Skipping openml_1142 (already exists)
+Skipping openml_31 (already exists)
+Skipping openml_1216 (already exists)
+Skipping openml_40536 (already exists)
+Skipping openml_40975 (already exists)
+Skipping openml_1494 (already exists)
+Skipping openml_40518 (already exists)
+Skipping openml_54 (already exists)
+Skipping openml_1510 (already exists)
+Skipping openml_1138 (already exists)
+Skipping openml_40685 (already exists)
+
+============================================================
+Running data collection for split method: orthogonal
+============================================================
+Skipping openml_1476 (already exists)
+Skipping openml_40982 (already exists)
+Skipping openml_41027 (already exists)
+Skipping openml_1217 (already exists)
+Skipping openml_1468 (already exists)
+Skipping openml_44 (already exists)
+Skipping openml_1466 (already exists)
+Skipping openml_1489 (already exists)
+Skipping openml_1492 (already exists)
+Skipping openml_1462 (already exists)
+Skipping openml_1053 (already exists)
+Skipping openml_1486 (already exists)
+Skipping openml_23 (already exists)
+Skipping openml_40509 (already exists)
+Skipping openml_1146 (already exists)
+Skipping openml_40496 (already exists)
+Skipping openml_4134 (already exists)
+Skipping openml_40498 (already exists)
+Skipping openml_469 (already exists)
+Skipping openml_1116 (already exists)
+Skipping openml_6 (already exists)
+Skipping openml_1067 (already exists)
+Skipping openml_182 (already exists)
+Skipping openml_18 (already exists)
+Skipping openml_1111 (already exists)
+Skipping openml_1457 (already exists)
+Skipping openml_1501 (already exists)
+Skipping openml_22 (already exists)
+Skipping openml_1235 (already exists)
+Skipping openml_1478 (already exists)
+Skipping openml_1233 (already exists)
+Skipping openml_40515 (already exists)
+Skipping openml_1119 (already exists)
+Skipping openml_1218 (already exists)
+Skipping openml_1130 (already exists)
+Skipping openml_1487 (already exists)
+Skipping openml_188 (already exists)
+Skipping openml_1590 (already exists)
+Skipping openml_28 (already exists)
+Skipping openml_1497 (already exists)
+Fetching OpenML dataset ID=40927...
+Failed to fetch dataset 40927: md5 checksum of local file for https://openml.org/data/v1/download/16797613/CIFAR_10.arff does not match description: expected: 556e01684912de400da7557c57155b97 but got b09893503b6319a709d713c244475133. Downloaded file could have been modified / corrupted, clean cache and retry...
+Skipping openml_40979 (already exists)
+Skipping openml_307 (already exists)
+Skipping openml_16 (already exists)
+Fetching OpenML dataset ID=1168...
+Failed to fetch dataset 1168: Target column 'SMPEP2' has 2 missing values. Missing values are not supported for target columns.
+Skipping openml_1464 (already exists)
+Skipping openml_1461 (already exists)
+Skipping openml_40996 (already exists)
+Skipping openml_1134 (already exists)
+Skipping openml_11 (already exists)
+Skipping openml_40670 (already exists)
+Skipping openml_23381 (already exists)
+Skipping openml_1480 (already exists)
+Skipping openml_1114 (already exists)
+Skipping openml_300 (already exists)
+Skipping openml_1238 (already exists)
+Skipping openml_1240 (already exists)
+Skipping openml_1120 (already exists)
+Skipping openml_1128 (already exists)
+Skipping openml_40966 (already exists)
+Skipping openml_50 (already exists)
+Fetching OpenML dataset ID=40511...
+Failed to fetch dataset 40511: Dataset with data_id 40511 not found.
+Skipping openml_1475 (already exists)
+Skipping openml_40499 (already exists)
+Skipping openml_42 (already exists)
+Skipping openml_1242 (already exists)
+Skipping openml_15 (already exists)
+Skipping openml_1068 (already exists)
+Skipping openml_1139 (already exists)
+Skipping openml_1142 (already exists)
+Skipping openml_31 (already exists)
+Skipping openml_1216 (already exists)
+Skipping openml_40536 (already exists)
+Skipping openml_40975 (already exists)
+Skipping openml_1494 (already exists)
+Skipping openml_40518 (already exists)
+Skipping openml_54 (already exists)
+Skipping openml_1510 (already exists)
+Skipping openml_1138 (already exists)
+Skipping openml_40685 (already exists)
+
+Data collection complete for all split methods.
+Training separate policies for split methods: ['half_noise', 'orthogonal']
+
+============================================================
+Training policy for split method: half_noise
+============================================================
+Loading meta-training data...
+Total samples: 5775
+Positive class (Improvement) rate: 0.680
+Training on 2353 features.
+Fitting model...
+Test Accuracy: 0.8374
+Test AUC: 0.8932
+              precision    recall  f1-score   support
+
+           0       0.76      0.76      0.76       196
+           1       0.88      0.88      0.88       382
+
+    accuracy                           0.84       578
+   macro avg       0.82      0.82      0.82       578
+weighted avg       0.84      0.84      0.84       578
+
+Model saved to experiments/x3_openml/output_local/policy_model_half_noise.joblib
+
+============================================================
+Training policy for split method: orthogonal
+============================================================
+Loading meta-training data...
+Total samples: 5775
+Positive class (Improvement) rate: 0.681
+Training on 2353 features.
+Fitting model...
+Test Accuracy: 0.8080
+Test AUC: 0.8726
+              precision    recall  f1-score   support
+
+           0       0.68      0.75      0.71       182
+           1       0.88      0.84      0.86       396
+
+    accuracy                           0.81       578
+   macro avg       0.78      0.79      0.78       578
+weighted avg       0.81      0.81      0.81       578
+
+Model saved to experiments/x3_openml/output_local/policy_model_orthogonal.joblib
+
+Policy training complete for all split methods.
+Meta-Test Datasets: 35
+Split Methods: ['half_noise', 'orthogonal']
+
+=== Running evaluation with split method: half_noise ===
+Loading Policy Model: experiments/x3_openml/output_local/policy_model_half_noise.joblib
+
+=== Running evaluation with split method: orthogonal ===
+Loading Policy Model: experiments/x3_openml/output_local/policy_model_orthogonal.joblib
+Fetching OpenML dataset ID=40668...
+Evaluating openml_40668...
+Fetching OpenML dataset ID=1493...
+Evaluating openml_1493...
+Fetching OpenML dataset ID=1467...
+Evaluating openml_1467...
+Fetching OpenML dataset ID=1050...
+Evaluating openml_1050...
+Fetching OpenML dataset ID=554...
+Evaluating openml_554...
+Fetching OpenML dataset ID=40701...
+Evaluating openml_40701...
+Fetching OpenML dataset ID=40994...
+Evaluating openml_40994...
+Fetching OpenML dataset ID=14...
+Evaluating openml_14...
+Fetching OpenML dataset ID=1237...
+Evaluating openml_1237...
+Fetching OpenML dataset ID=1491...
+Evaluating openml_1491...
+Fetching OpenML dataset ID=29...
+Evaluating openml_29...
+Fetching OpenML dataset ID=1479...
+Evaluating openml_1479...
+Fetching OpenML dataset ID=40978...
+Evaluating openml_40978...
+Fetching OpenML dataset ID=4135...
+Evaluating openml_4135...
+Fetching OpenML dataset ID=32...
+Evaluating openml_32...
+Fetching OpenML dataset ID=40984...
+Evaluating openml_40984...
+Fetching OpenML dataset ID=46...
+Evaluating openml_46...
+Fetching OpenML dataset ID=1049...
+Evaluating openml_1049...
+Fetching OpenML dataset ID=1063...
+Evaluating openml_1063...
+Fetching OpenML dataset ID=1112...
+Evaluating openml_1112...
+Fetching OpenML dataset ID=40517...
+Evaluating openml_40517...
+Fetching OpenML dataset ID=12...
+Evaluating openml_12...
+Fetching OpenML dataset ID=37...
+Evaluating openml_37...
+Fetching OpenML dataset ID=1504...
+Evaluating openml_1504...
+
+Evaluation Complete.
+
+============================================================
+SPLIT METHOD: HALF_NOISE
+============================================================
+
+Summary Statistics (Mean % Improvement over Baseline):
+variation  random_imp_pct  greedy_imp_pct  anti-greedy_imp_pct
+count           33.000000       33.000000            33.000000
+mean             5.031232        5.569582             5.396594
+std             16.588963       17.218005            16.863769
+min            -21.460870      -21.036106           -20.931271
+25%             -0.328829       -0.340686            -0.939839
+50%              0.896705        1.017508             0.694773
+75%              6.710472        8.143023             5.429443
+max             56.952819       57.520154            55.665309
+
+Win Rates (Variation < Baseline):
+  random: 65.7%
+  greedy: 57.1%
+  anti-greedy: 60.0%
+
+Mean % Improvement over Baseline:
+  random: 5.03%
+  greedy: 5.57%
+  anti-greedy: 5.40%
+
+Paired T-Tests (vs Baseline):
+  random: t=-0.502, p=6.1882e-01
+  greedy: t=-0.408, p=6.8587e-01
+  anti-greedy: t=-0.377, p=7.0862e-01
+
+============================================================
+SPLIT METHOD: ORTHOGONAL
+============================================================
+
+Summary Statistics (Mean % Improvement over Baseline):
+variation  random_imp_pct  greedy_imp_pct  anti-greedy_imp_pct
+count           33.000000       33.000000            33.000000
+mean             6.049219        5.925462             6.097151
+std             16.934171       16.563844            17.659786
+min            -20.152897      -24.024488           -23.408480
+25%             -0.503660       -0.534325            -0.018762
+50%              0.458127        1.463889             1.892173
+75%              5.996701        5.574400             5.233484
+max             55.225572       52.722380            58.766789
+
+Win Rates (Variation < Baseline):
+  random: 62.9%
+  greedy: 65.7%
+  anti-greedy: 68.6%
+
+Mean % Improvement over Baseline:
+  random: 6.05%
+  greedy: 5.93%
+  anti-greedy: 6.10%
+
+Paired T-Tests (vs Baseline):
+  random: t=0.116, p=9.0856e-01
+  greedy: t=-0.101, p=9.2014e-01
+  anti-greedy: t=-0.101, p=9.2040e-01
+
+============================================================
+COMPARISON BETWEEN SPLIT METHODS
+============================================================
+
+Mean % Improvement by Split Method and Strategy:
+split_method  half_noise  orthogonal
+strategy                            
+anti-greedy     5.396594    6.097151
+greedy          5.569582    5.925462
+random          5.031232    6.049219
+
+[KEY METRIC] Greedy advantage over Random (Greedy_imp - Random_imp):
+  half_noise: +0.54%
+  orthogonal: -0.12%
+
+Saved analysis to experiments/x3_openml/output

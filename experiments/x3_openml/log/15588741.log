@@ -1,0 +1,551 @@
+==========================================
+SLURM_JOB_ID = 15588741
+SLURM_SUBMIT_DIR = /project/caai_amzn_cmpr/efithian/Adaptive-Net
+SLURM_JOB_NODELIST = mgpu04
+==========================================
+Meta-Train Datasets: 80
+Split Methods: ['half_noise', 'orthogonal']
+
+============================================================
+Running data collection for split method: half_noise
+============================================================
+Fetching OpenML dataset ID=1476...
+Running openml_1476: 128 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40982...
+Running openml_40982: 27 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=41027...
+Running openml_41027: 6 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1217...
+Running openml_1217: 11 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1468...
+Running openml_1468: 856 features, 9 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=44...
+Running openml_44: 57 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1466...
+Running openml_1466: 35 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1489...
+Running openml_1489: 5 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1492...
+Running openml_1492: 64 features, 100 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1462...
+Running openml_1462: 4 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1053...
+Running openml_1053: 21 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1486...
+Running openml_1486: 118 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=23...
+Running openml_23: 9 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40509...
+Running openml_40509: 14 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1146...
+Running openml_1146: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40496...
+Running openml_40496: 7 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=4134...
+Running openml_4134: 1776 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40498...
+Running openml_40498: 11 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=469...
+Running openml_469: 4 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1116...
+Running openml_1116: 167 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=6...
+Running openml_6: 16 features, 26 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1067...
+Running openml_1067: 21 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=182...
+Running openml_182: 36 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=18...
+Running openml_18: 6 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1111...
+Running openml_1111: 212 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1457...
+Running openml_1457: 10000 features, 50 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1501...
+Running openml_1501: 256 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=22...
+Running openml_22: 47 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1235...
+Running openml_1235: 9 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1478...
+Running openml_1478: 561 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1233...
+Running openml_1233: 6373 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40515...
+Running openml_40515: 57 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1119...
+Running openml_1119: 14 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1218...
+Running openml_1218: 11 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1130...
+Running openml_1130: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1487...
+Running openml_1487: 72 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=188...
+Running openml_188: 19 features, 5 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1590...
+Running openml_1590: 14 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=28...
+Running openml_28: 64 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1497...
+Running openml_1497: 24 features, 4 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40927...
+Failed to fetch dataset 40927: md5 checksum of local file for https://openml.org/data/v1/download/16797613/CIFAR_10.arff does not match description: expected: 556e01684912de400da7557c57155b97 but got b09893503b6319a709d713c244475133. Downloaded file could have been modified / corrupted, clean cache and retry...
+Fetching OpenML dataset ID=40979...
+Running openml_40979: 240 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=307...
+Running openml_307: 12 features, 11 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=16...
+Running openml_16: 64 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1168...
+Failed to fetch dataset 1168: Target column 'SMPEP2' has 2 missing values. Missing values are not supported for target columns.
+Fetching OpenML dataset ID=1464...
+Running openml_1464: 4 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1461...
+Running openml_1461: 16 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40996...
+Running openml_40996: 784 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1134...
+Running openml_1134: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=11...
+Running openml_11: 4 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40670...
+Running openml_40670: 180 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=23381...
+Running openml_23381: 12 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1480...
+Running openml_1480: 10 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1114...
+Running openml_1114: 212 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=300...
+Running openml_300: 617 features, 26 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1238...
+Running openml_1238: 3 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1240...
+Running openml_1240: 29 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1120...
+Running openml_1120: 10 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1128...
+Running openml_1128: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40966...
+Running openml_40966: 77 features, 8 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=50...
+Running openml_50: 9 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40511...
+Failed to fetch dataset 40511: Dataset with data_id 40511 not found.
+Fetching OpenML dataset ID=1475...
+Running openml_1475: 51 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40499...
+Running openml_40499: 40 features, 11 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=42...
+Running openml_42: 35 features, 19 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1242...
+Running openml_1242: 100 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=15...
+Running openml_15: 9 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1068...
+Running openml_1068: 21 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1139...
+Running openml_1139: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1142...
+Running openml_1142: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=31...
+Running openml_31: 20 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1216...
+Running openml_1216: 9 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40536...
+Running openml_40536: 120 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40975...
+Running openml_40975: 6 features, 4 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1494...
+Running openml_1494: 41 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40518...
+Running openml_40518: 34 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=54...
+Running openml_54: 18 features, 4 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1510...
+Running openml_1510: 30 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1138...
+Running openml_1138: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40685...
+Running openml_40685: 9 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+
+============================================================
+Running data collection for split method: orthogonal
+============================================================
+Fetching OpenML dataset ID=1476...
+Running openml_1476: 128 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40982...
+Running openml_40982: 27 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=41027...
+Running openml_41027: 6 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1217...
+Running openml_1217: 11 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1468...
+Running openml_1468: 856 features, 9 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=44...
+Running openml_44: 57 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1466...
+Running openml_1466: 35 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1489...
+Running openml_1489: 5 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1492...
+Running openml_1492: 64 features, 100 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1462...
+Running openml_1462: 4 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1053...
+Running openml_1053: 21 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1486...
+Running openml_1486: 118 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=23...
+Running openml_23: 9 features, 3 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40509...
+Running openml_40509: 14 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1146...
+Running openml_1146: 10935 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40496...
+Running openml_40496: 7 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=4134...
+Running openml_4134: 1776 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=40498...
+Running openml_40498: 11 features, 7 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=469...
+Running openml_469: 4 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1116...
+Running openml_1116: 167 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=6...
+Running openml_6: 16 features, 26 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1067...
+Running openml_1067: 21 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=182...
+Running openml_182: 36 features, 6 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=18...
+Running openml_18: 6 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1111...
+Running openml_1111: 212 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1457...
+Running openml_1457: 10000 features, 50 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1501...
+Running openml_1501: 256 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=22...
+Running openml_22: 47 features, 10 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)
+Fetching OpenML dataset ID=1235...
+Running openml_1235: 9 features, 2 classes
+WARNING: min action_epoch (6) < max(temporal_windows) (32). Temporal statistics may be computed with partial buffer data for early splits.
+Stratified action epochs: [6, 10, 14, 18, 22]
+Total model initializations: 15 (1 regimes × 5 slices × 3 inits/slice)

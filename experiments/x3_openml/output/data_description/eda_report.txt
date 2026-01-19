@@ -1,0 +1,55 @@
+============================================================
+OPENML-CC18 DATASET EXPLORATORY DATA ANALYSIS
+============================================================
+
+Total datasets: 115
+Successfully analyzed: 110
+Failed to analyze: 5
+
+TRAIN/TEST SPLIT
+----------------------------------------
+Train datasets: 80 (70%)
+Test datasets:  35 (30%)
+
+TASK TYPES
+----------------------------------------
+All datasets are classification (CC18 = Curated Classification 18)
+
+DATASET SIZE STATISTICS
+----------------------------------------
+Samples:  min=500, max=1997410, median=2054, mean=110619
+Features: min=3, max=10935, median=34, mean=981
+Classes:  min=2, max=100, median=2, mean=8.1
+
+FEATURE TYPE DISTRIBUTION
+----------------------------------------
+Numeric features:     104513 (96.9%)
+Categorical features: 3346 (3.1%)
+
+MISSING DATA
+----------------------------------------
+Datasets with no missing data: 96 (83.5%)
+Datasets with >10% missing:    4 (3.5%)
+Mean missing percentage:       2.20%
+
+CLASS BALANCE
+----------------------------------------
+Perfectly balanced (ratio=1):   17
+Moderately imbalanced (1-10):   69
+Highly imbalanced (>10):        24
+
+FEATURE VARIANCE (numeric features)
+----------------------------------------
+Mean variance:   47355749633710347867746954916134912.0000
+Median variance: 4374.9674
+
+FILES GENERATED
+----------------------------------------
+- dataset_descriptions.csv: Full statistics for each dataset
+- summary_statistics.csv: Aggregate statistics
+- dataset_distributions.png: Histograms of key metrics
+- samples_vs_features.png: Scatter plot of dataset sizes
+- class_balance_distribution.png: Class imbalance histogram
+- variance_distribution.png: Feature variance histogram
+- missing_data_distribution.png: Missing data histogram
+- train_test_split.png: Visualization of train/test split
